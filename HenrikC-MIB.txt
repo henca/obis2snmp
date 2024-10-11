@@ -1,0 +1,172 @@
+HenrikC-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, Integer32, enterprises
+        FROM SNMPv2-SMI
+    DisplayString
+        FROM SNMPv2-TC;
+
+HenrikCarlqvist MODULE-IDENTITY
+    LAST-UPDATED  "202409250000Z"
+    ORGANIZATION  "Henrik Carlqvist"
+    CONTACT-INFO  "https://github.com/henca"
+    DESCRIPTION   "
+        The Henrik Carlqvist private enterprise MIB tree
+
+        SPDX-License-Identifier: Zlib
+
+        Copyright (c) 2024 Henrik Carlqvist
+
+        This software is provided 'as-is', without any express or implied
+        warranty. In no event will the authors be held liable for any damages
+        arising from the use of this software.
+
+        Permission is granted to anyone to use this software for any purpose,
+        including commercial applications, and to alter it and redistribute it
+        freely, subject to the following restrictions:
+
+        1. The origin of this software must not be misrepresented; you must
+           not claim that you wrote the original software. If you use this
+           software in a product, an acknowledgment in the product
+           documentation would be appreciated but is not required.
+        2. Altered source versions must be plainly marked as such, and must
+           not be misrepresented as being the original software.
+        3. This notice may not be removed or altered from any source
+           distribution.
+
+        I choose the Zlib license for this file only to avoid forks being
+        incompatible with each other or with future updates from me. Please
+        feel free to use this unmodified file in your project. Please also
+        feel free to modify the file, but if you do so, to comply with point 2
+        above, I expect you to rename this file to something else than
+        HenrikC-MIB.txt and to replace my private enterprice number 62368 below
+        with your own private enterprise number which you can apply for without
+        any cost at
+        https://www.iana.org/assignments/enterprise-numbers/assignment/apply/ "
+    REVISION      "202409080000Z"
+    DESCRIPTION   "Initial revision, with OBIS data from utility meters"
+    ::= { enterprises 62368 }
+
+-- IEC 62056-21 OBIS OIDs for utility meters
+MeterTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF Meter
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION "Table of meters"
+    ::= { HenrikCarlqvist 1 }
+
+Meter OBJECT-TYPE
+    SYNTAX      Meter
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION "Data from one meter"
+    INDEX   { MeterIndex }
+    ::= { MeterTable 1 }
+
+Meter ::=
+    -- This table supports at most 32 entries, due to a limitation
+    -- in the sparse column handling of the MIBs For Dummies agent.
+    SEQUENCE {
+        MeterIndex                          Integer32,
+        MeterIdentification                 DisplayString,
+        MeterIP                             DisplayString,
+        MeterMAC                            DisplayString,
+        MeterRSSI                           Integer32,
+        MeterMultiplier 		    Integer32,
+    }
+
+MeterIndex OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Meter number"
+    ::= { Meter 1 }
+
+MeterIdentification OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..255))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Name or type of Meter"
+    ::= { Meter 2 }
+
+MeterIP OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..255))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "IP address of meter"
+    ::= { Meter 3 }
+
+MeterMAC OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..255))
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "MAC address of meter"
+    ::= { Meter 4 }
+
+MeterRSSI OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "WiFi RSSI (dBm)"
+    ::= { Meter 5 }
+
+MeterMultiplier OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "1 means data is unaltered but might have lost precision from any
+         decimals. Higher values like 1000 can be used to preserve precision
+         otherwise lost in decimals when represented as Integer32. A value of
+         1000 means that readings of a value in a unit like kW will instead be
+         read out as W."
+    ::= { Meter 6 }
+
+MeterOBISdescription OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..255))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION "Description of provided OBIS values"
+    ::= { Meter 7 }
+
+MeterOBISunit OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..255))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION "Original unit before multiplied with given multiplier"
+    ::= { Meter 8 }
+
+MeterOBISlatest OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION "Latest values that have been multiplied with given multiplier"
+    ::= { Meter 9 }
+
+MeterOBIS5minMean OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION "5 minute mean values that have been multiplied with given multiplier"
+    ::= { Meter 10 }
+
+MeterOBIS5minMax OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION "5 minute max values that have been multiplied with given multiplier"
+    ::= { Meter 11 }
+
+MeterOBIS5minMin OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION "5 minute min values that have been multiplied with given multiplier"
+    ::= { Meter 12 }
+
+END
