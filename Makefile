@@ -74,5 +74,10 @@ clean:
 install: $(AGENTX)
 	install -d $(DESTDIR)$(NETSNMP_MIBS_DIR)
 	install -m 644 HenrikC-MIB.txt $(DESTDIR)$(NETSNMP_MIBS_DIR)
+	install -d $(DESTDIR)$(SBIN_DIR)
 	install -m 755 -s $(AGENTX) $(DESTDIR)$(SBIN_DIR)
+	install -d $(DESTDIR)$(SBIN_DIR)/../$(PLGDIR)
+	install -m 755 $(PLG_FILES) $(DESTDIR)$(SBIN_DIR)/../$(PLGDIR)
+	grep HenrikC-MIB $(DESTDIR)$(NETSNMP_MIBS_DIR)/../snmp.conf || \
+         echo "mibs +HenrikC-MIB" >> $(DESTDIR)$(NETSNMP_MIBS_DIR)/../snmp.conf
 
