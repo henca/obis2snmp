@@ -57,7 +57,7 @@ int
 main (int argc, char **argv) {
   int background = 0; /* change this if you not want to run in the background */
   int syslog = 1; /* change this if you not want to use syslog */
-  char *conffile = "/etc/config.json";
+  char *conffile = ETC_DIR "/obsi2snmp_config.json";
   int opt;
   struct json_object *conf_obj, *meter_array, *meter_obj;
   const char *driver;
@@ -69,13 +69,17 @@ main (int argc, char **argv) {
 
   curl_global_init(CURL_GLOBAL_NOTHING);
   
-  while ((opt = getopt(argc, argv, "c:")) != -1) {
+  while ((opt = getopt(argc, argv, "hc:")) != -1) {
      switch(opt) {
 	case 'c':
 	   conffile=optarg;
 	   break;
+	case 'h':
 	default:
-	   fprintf(stderr, "Usage: %s [-c /path/to/config.json]\n", argv[0]);
+	   fprintf(stderr,
+		   "Usage: %s [-c /path/to/config.json]\n"
+		   "(-c defaults to %s)\n",
+		   argv[0], conffile);
 	   exit(EXIT_FAILURE);
      }
   }

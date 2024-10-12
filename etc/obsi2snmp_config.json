@@ -1,0 +1,4 @@
+{"meters": [
+   {"driver": "P1IB", "parameters": "ip=192.168.67.112,multiplier=1000"},
+   {"driver": "P1IB", "parameters": "ip=192.168.67.112,multiplier=1"}
+ ]}

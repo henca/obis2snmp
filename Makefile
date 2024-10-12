@@ -9,6 +9,11 @@ NETSNMP_MIBS_DIR = $(NETSNMP_PREFIX)/share/snmp/mibs
 NETSNMP_LIBS_DIR = $(NETSNMP_PREFIX)/$(NETSNMP_LIB)/snmp/dlmod
 PREFIX ?= /usr/local
 SBIN_DIR ?= $(PREFIX)/sbin
+ifeq ($(PREFIX),/usr)
+ETC_DIR = /etc
+else
+ETC_DIR = $(PREFIX)/etc
+endif
 
 INCDIR = inc
 SRCDIR = src
@@ -29,7 +34,8 @@ AGENTX = $(BINDIR)/obis2snmp_agentxd
 # some json-c versions deprecated useful functions which then was undeprecated
 CFLAGS += -g `pkg-config --cflags json-c` -Wno-deprecated-declarations \
           `curl-config --cflags` \
-          $(NETSNMP_CFLAGS) -fPIC -Wall -Wstrict-prototypes -I $(INCDIR) 
+          $(NETSNMP_CFLAGS) -fPIC -Wall -Wstrict-prototypes -I $(INCDIR) \
+          -D ETC_DIR=\"$(ETC_DIR)\"
 LDFLAGS += $(NETSNMP_LIBS) \
            `pkg-config --libs json-c` \
            `curl-config --libs` \
