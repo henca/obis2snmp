@@ -7,7 +7,7 @@ IMPORTS
         FROM SNMPv2-TC;
 
 HenrikCarlqvist MODULE-IDENTITY
-    LAST-UPDATED  "202409250000Z"
+    LAST-UPDATED  "202410130000Z"
     ORGANIZATION  "Henrik Carlqvist"
     CONTACT-INFO  "https://github.com/henca"
     DESCRIPTION   "
@@ -43,7 +43,7 @@ HenrikCarlqvist MODULE-IDENTITY
         with your own private enterprise number which you can apply for without
         any cost at
         https://www.iana.org/assignments/enterprise-numbers/assignment/apply/ "
-    REVISION      "202409080000Z"
+    REVISION      "202410130000Z"
     DESCRIPTION   "Initial revision, with OBIS data from utility meters"
     ::= { enterprises 62368 }
 
@@ -68,7 +68,7 @@ Meter ::=
     -- in the sparse column handling of the MIBs For Dummies agent.
     SEQUENCE {
         MeterIndex                          Integer32,
-        MeterIdentification                 DisplayString,
+        MeterType                           DisplayString,
         MeterIP                             DisplayString,
         MeterMAC                            DisplayString,
         MeterRSSI                           Integer32,
@@ -83,7 +83,7 @@ MeterIndex OBJECT-TYPE
         "Meter number"
     ::= { Meter 1 }
 
-MeterIdentification OBJECT-TYPE
+MeterType OBJECT-TYPE
     SYNTAX      DisplayString (SIZE (0..255))
     MAX-ACCESS  read-only
     STATUS      current
