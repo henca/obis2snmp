@@ -69,16 +69,34 @@ static size_t my_curl_callback(void *buffer, size_t size, size_t nmemb, void *us
 	    info_json = json_object_object_get(meter_json, "info");
 	    if(info_json)
 	    {
+	       if(!entry->MeterType_len)
+	       {
+		  tmp_json = json_object_object_get(info_json, "meter");
+		  if(tmp_json)
+		  {
+		     strncpy(entry->MeterType,
+			     json_object_get_string(tmp_json), 254);
+		     entry->MeterType[254]=0;
+		     entry->MeterType_len =
+			strlen(entry->MeterType);
+		  }
+	       }
 	       if(!entry->MeterMAC_len)
 	       {
 		  tmp_json = json_object_object_get(info_json, "mac");
 		  if(tmp_json)
 		  {
-		     strncpy(entry->MeterMAC, json_object_get_string(tmp_json), 254);
+		     strncpy(entry->MeterMAC,
+			     json_object_get_string(tmp_json), 254);
 		     entry->MeterMAC[254]=0;
 		     entry->MeterMAC_len = strlen(entry->MeterMAC);
 		  }
 			
+	       }
+	       tmp_json = json_object_object_get(info_json, "rssi");
+	       if(tmp_json)
+	       {
+		  entry->MeterRSSI = json_object_get_int(tmp_json);
 	       }
 	    }
 	    json_object_put(meter_json); /* free json stuff */
@@ -119,6 +137,14 @@ agent_h_meter(struct variable *vp, oid *name, size_t *length, int exact,
       case COLUMN_METERINDEX:
 	 long_ret  = index;
 	 return (u_char *)&long_ret;
+      case COLUMN_METERTYPE:
+	 if(!entry->MeterType_len)
+	    return NULL;
+	 else
+	 {
+	    *var_len = entry->MeterType_len;
+	    return (u_char *) entry->MeterType;
+	 }
       case COLUMN_METERIP:
 	 *var_len = entry->MeterIP_len;
 	 return (u_char *) entry->MeterIP;
@@ -130,6 +156,9 @@ agent_h_meter(struct variable *vp, oid *name, size_t *length, int exact,
 	    *var_len = entry->MeterMAC_len;
 	    return (u_char *) entry->MeterMAC;
 	 }
+      case COLUMN_METERRSSI:
+	 long_ret  = entry->MeterRSSI;
+	 return (u_char *)&long_ret;
       case COLUMN_METERMULTIPLIER:
 	 long_ret  = entry->MeterMultiplier;
 	 return (u_char *)&long_ret;
@@ -141,8 +170,10 @@ agent_h_meter(struct variable *vp, oid *name, size_t *length, int exact,
 
 struct variable8 agent_meter_vars[] = {
    { COLUMN_METERINDEX, ASN_INTEGER, RONLY, agent_h_meter, 1, { COLUMN_METERINDEX } },
+   { COLUMN_METERTYPE, ASN_OCTET_STR, RONLY, agent_h_meter, 1, { COLUMN_METERTYPE } },
    { COLUMN_METERIP, ASN_OCTET_STR, RONLY, agent_h_meter, 1, { COLUMN_METERIP } },
    { COLUMN_METERMAC, ASN_OCTET_STR, RONLY, agent_h_meter, 1, { COLUMN_METERMAC } },
+   { COLUMN_METERRSSI, ASN_INTEGER, RONLY, agent_h_meter, 1, { COLUMN_METERRSSI } },
    { COLUMN_METERMULTIPLIER, ASN_INTEGER, RONLY, agent_h_meter, 1, { COLUMN_METERMULTIPLIER } },
 };
 
