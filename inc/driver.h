@@ -39,15 +39,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * column number definitions for table MeterTable 
  */
 #define COLUMN_METERINDEX               1
-#define COLUMN_METERIDENTIFICATION      2
+#define COLUMN_METERTYPE                2
 #define COLUMN_METERIP                  3
 #define COLUMN_METERMAC                 4
 #define COLUMN_METERRSSI                5
 #define COLUMN_METERMULTIPLIER		6
-#define COLUMN_METEROBISDESCRIPTION		7
+#define COLUMN_METEROBISDESCRIPTION    	7
 #define COLUMN_METEROBISUNIT		8
 #define COLUMN_METEROBISLATEST		9
-#define COLUMN_METEROBIS5MINMEAN		10
+#define COLUMN_METEROBIS5MINMEAN       	10
 #define COLUMN_METEROBIS5MINMAX		11
 #define COLUMN_METEROBIS5MINMIN		12
 
@@ -63,8 +63,8 @@ struct MeterTable_entry {
     /*
      * Column values 
      */
-    char            MeterIdentification[255];
-    size_t          MeterIdentification_len;
+    char            MeterType[255];
+    size_t          MeterType_len;
     char            MeterIP[255];
     size_t          MeterIP_len;
     char            MeterMAC[255];
