@@ -189,6 +189,7 @@ main (int argc, char **argv) {
   SOCK_CLEANUP;
   curl_global_cleanup();
 
+  free(drivers);
   return 0;
 }
 

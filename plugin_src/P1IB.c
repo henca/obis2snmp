@@ -32,16 +32,34 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <net-snmp/agent/util_funcs.h>
 #include <curl/curl.h>
 #include <json.h>
+#include <pthread.h>
 
 struct instance
 {
    struct MeterTable_entry *entry;
    CURL *curl;
+   int cont;
+   pthread_t work_thread;
 };
 
 static struct MeterTable_entry *pMeterEntries=NULL;
 static unsigned int MaxRegisteredEntry=0;
 static unsigned int numRegisteredEntries=0;
+
+static void *work_task(void *in)
+{
+   struct instance *i = in;
+
+   while(i->cont)
+   {
+      curl_easy_perform(i->curl);
+      sleep(10);
+      fprintf(stderr, "work thread %ld slept\n", i->entry->MeterIndex);
+   }
+   free(i);
+   fprintf(stderr, "work thread done\n");
+   return NULL;
+} /* work_task */
 
 static size_t my_curl_callback(void *buffer, size_t size, size_t nmemb, void *userp)
 {
@@ -223,7 +241,7 @@ static void present_oid(oid o[], size_t l)
 void *init_driver(long MeterIndex,
 		  const char *parameters)
 {
-   struct MeterTable_entry *entry;
+   struct MeterTable_entry *entry=NULL;
    oid       MeterTableEntry_oid[MeterTable_oid_len+1];
    char *pc;
    struct instance *out = malloc(sizeof(struct instance));
@@ -239,15 +257,24 @@ void *init_driver(long MeterIndex,
    
    snmp_log(LOG_INFO,"Start of init.\n");
    if(MeterIndex < 1)
+   {
+      free(out);
       return NULL;
+   }
    if(MeterIndex > MaxRegisteredEntry)
    {
       MaxRegisteredEntry = MeterIndex;
+      entry = pMeterEntries;
       pMeterEntries = realloc(pMeterEntries, MeterIndex*sizeof(struct MeterTable_entry));
       numRegisteredEntries++;
    }
    if(!pMeterEntries)
+   {
+      pMeterEntries = entry;
+      numRegisteredEntries--;
+      free(out);
       return NULL;
+   }
    entry = &(pMeterEntries[MeterIndex-1]);
    out->entry=entry;
    
@@ -315,8 +342,13 @@ void *init_driver(long MeterIndex,
 					  MeterTableEntry_oid,
 					  OID_LENGTH(MeterTableEntry_oid),
 					  HANDLER_CAN_RONLY)); */
-
-   
+   out->cont=1;
+   if(pthread_create(&(out->work_thread), NULL, work_task, out))
+   {
+      fprintf(stderr, "pthread_create failed!\n");
+   }
+   else
+      fprintf(stderr, "pthread success, index %ld\n", out->entry->MeterIndex);
    /* fprintf(stderr ,"End of init, index %ld listening below oid ", MeterIndex); 
       present_oid(MeterTableEntry_oid, OID_LENGTH(MeterTableEntry_oid)); */
    return out;
@@ -345,6 +377,7 @@ void remove_driver(void *driver)
    if(i->curl)
       curl_easy_cleanup(i->curl);
    numRegisteredEntries--;
+   i->cont = 0;
    if(!numRegisteredEntries)
       final_cleanup();
    /* !!! - release any other internal resources (internal_data) */
