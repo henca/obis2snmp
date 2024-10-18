@@ -29,7 +29,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **************************************************************/
 #include <string.h>
 #include "driver.h"
-#include <net-snmp/agent/util_funcs.h>
 #include <curl/curl.h>
 #include <json.h>
 #include <pthread.h>
@@ -42,9 +41,6 @@ struct instance
    pthread_t work_thread;
 };
 
-static struct MeterTable_entry *pMeterEntries=NULL;
-static unsigned int MaxRegisteredEntry=0;
-static unsigned int numRegisteredEntries=0;
 
 static void *work_task(void *in)
 {
@@ -54,7 +50,7 @@ static void *work_task(void *in)
    {
       curl_easy_perform(i->curl);
       sleep(10);
-      fprintf(stderr, "work thread %ld slept\n", i->entry->MeterIndex);
+      /* fprintf(stderr, "work thread %ld slept\n", i->entry->MeterIndex); */
    }
    free(i);
    fprintf(stderr, "work thread done\n");
@@ -127,158 +123,20 @@ static size_t my_curl_callback(void *buffer, size_t size, size_t nmemb, void *us
    
 } /* my_curl_callback */
 
-static u_char *
-agent_h_meter(struct variable *vp, oid *name, size_t *length, int exact,
-    size_t *var_len, WriteMethod **write_method)
-{
-   static unsigned long long_ret;
-   unsigned int index;
-   struct MeterTable_entry *entry;
-
-   if (header_simple_table(vp, name, length, exact, var_len, write_method, -1))
-      return NULL;
-   index = name[*length -1];
-   /* fprintf(stderr, "index: %d\n", index); */
-   if(index > MaxRegisteredEntry) return NULL;
-   entry = &(pMeterEntries[index-1]);
-   /* fprintf(stderr, "low enough\n", index); */
-   if((entry->MeterIndex != index) || !(entry->valid)) return NULL;
-   
-   /* fprintf(stderr, "vp: %p\n", vp);
-   fprintf(stderr, "magic: %d\n", vp->magic);
-   fprintf(stderr, "lengthp: %p\n", length);
-   fprintf(stderr, "length: %d\n", *length);
-   fprintf(stderr, "oid: ");
-   for(long_ret=0; long_ret<*length; long_ret++) 
-   fprintf(stderr, "%d.", name[long_ret]); */
-   switch (vp->magic) {
-      case COLUMN_METERINDEX:
-	 long_ret  = index;
-	 return (u_char *)&long_ret;
-      case COLUMN_METERTYPE:
-	 if(!entry->MeterType_len)
-	    return NULL;
-	 else
-	 {
-	    *var_len = entry->MeterType_len;
-	    return (u_char *) entry->MeterType;
-	 }
-      case COLUMN_METERIP:
-	 *var_len = entry->MeterIP_len;
-	 return (u_char *) entry->MeterIP;
-      case COLUMN_METERMAC:
-	 if(!entry->MeterMAC_len)
-	    return NULL;
-	 else
-	 {
-	    *var_len = entry->MeterMAC_len;
-	    return (u_char *) entry->MeterMAC;
-	 }
-      case COLUMN_METERRSSI:
-	 long_ret  = entry->MeterRSSI;
-	 return (u_char *)&long_ret;
-      case COLUMN_METERMULTIPLIER:
-	 long_ret  = entry->MeterMultiplier;
-	 return (u_char *)&long_ret;
-      default:
-	 break;
-   }
-   return NULL;
-} /* agent_h_meter */
-
-struct variable8 agent_meter_vars[] = {
-   { COLUMN_METERINDEX, ASN_INTEGER, RONLY, agent_h_meter, 1, { COLUMN_METERINDEX } },
-   { COLUMN_METERTYPE, ASN_OCTET_STR, RONLY, agent_h_meter, 1, { COLUMN_METERTYPE } },
-   { COLUMN_METERIP, ASN_OCTET_STR, RONLY, agent_h_meter, 1, { COLUMN_METERIP } },
-   { COLUMN_METERMAC, ASN_OCTET_STR, RONLY, agent_h_meter, 1, { COLUMN_METERMAC } },
-   { COLUMN_METERRSSI, ASN_INTEGER, RONLY, agent_h_meter, 1, { COLUMN_METERRSSI } },
-   { COLUMN_METERMULTIPLIER, ASN_INTEGER, RONLY, agent_h_meter, 1, { COLUMN_METERMULTIPLIER } },
-};
-
-int
-driver_handler(netsnmp_mib_handler *handler,
-	       netsnmp_handler_registration *reginfo,
-	       netsnmp_agent_request_info *reqinfo,
-	       netsnmp_request_info *requests)
-{
-    netsnmp_request_info *request;
-
-    DEBUGMSGTL(("Meters:handler", "Processing request (%d)\n",
-                reqinfo->mode));
-    snmp_log(LOG_INFO,"P1IB handler....\n");
-    switch (reqinfo->mode) {
-        /*
-         * Read-support (also covers GetNext requests)
-         */
-    case MODE_GET:
-        for (request = requests; request; request = request->next) {
-            if (request->processed)
-                continue;
-	    snmp_set_var_typed_integer(request->requestvb, ASN_INTEGER,
-				       7 /* request->index */);
-        }
-        break;
-
-    }
-    return SNMP_ERR_NOERROR;
-} /* driver_handler */
-
-#if 0
-static void present_oid(oid o[], size_t l)
-{
-   size_t i;
-
-   for(i=0; i<l; i++)
-   {
-      fprintf(stderr, "%ld", o[i]);
-      if(i<(l-1))
-	 fprintf(stderr, ".");
-   }
-   fprintf(stderr, "\n");
-} /* present_oid */
-#endif
-
-void *init_driver(long MeterIndex,
+void *init_driver(struct MeterTable_entry *entry,
 		  const char *parameters)
 {
-   struct MeterTable_entry *entry=NULL;
-   oid       MeterTableEntry_oid[MeterTable_oid_len+1];
    char *pc;
    struct instance *out = malloc(sizeof(struct instance));
 
    if(!out)
       return NULL;
 
-   memcpy(MeterTableEntry_oid, MeterTable_oid, MeterTable_oid_len*sizeof(oid));
-   MeterTableEntry_oid[MeterTable_oid_len] = 1;
-
    /*   fprintf(stderr, "MeterTable_oid_len: %ld  MeterTableEntry_oid_len: %ld\n",
 	MeterTable_oid_len, OID_LENGTH(MeterTableEntry_oid)); */
    
-   snmp_log(LOG_INFO,"Start of init.\n");
-   if(MeterIndex < 1)
-   {
-      free(out);
-      return NULL;
-   }
-   if(MeterIndex > MaxRegisteredEntry)
-   {
-      MaxRegisteredEntry = MeterIndex;
-      entry = pMeterEntries;
-      pMeterEntries = realloc(pMeterEntries, MeterIndex*sizeof(struct MeterTable_entry));
-      numRegisteredEntries++;
-   }
-   if(!pMeterEntries)
-   {
-      pMeterEntries = entry;
-      numRegisteredEntries--;
-      free(out);
-      return NULL;
-   }
-   entry = &(pMeterEntries[MeterIndex-1]);
    out->entry=entry;
    
-   entry->MeterIndex = MeterIndex;
    entry->valid = 1;
    pc = strstr(parameters, "ip=");
    if(pc)
@@ -321,53 +179,22 @@ void *init_driver(long MeterIndex,
       curl_easy_setopt(out->curl, CURLOPT_WRITEDATA, (void *)out);
       curl_easy_perform(out->curl);
    }
-   /* REGISTER_MIB("Meter", agent_meter_vars, variable8, MeterTableEntry_oid); */
-   if (register_mib_range("Meter",
-			  (struct variable *) agent_meter_vars,
-			  sizeof(struct variable8),
-			  sizeof(agent_meter_vars)/sizeof(struct variable8),
-			  MeterTableEntry_oid,
-			  sizeof(MeterTableEntry_oid)/sizeof(oid),
-			  DEFAULT_MIB_PRIORITY,
-			  MeterIndex,
-			  MeterIndex+1,
-			  NULL) !=
-       MIB_REGISTERED_OK)
-   {
-      DEBUGMSGTL(("register_mib", "%s registration failed\n", descr));
-   } 
-   /*   netsnmp_register_handler(
-      netsnmp_create_handler_registration("MeterTableEntry",
-					  driver_handler,
-					  MeterTableEntry_oid,
-					  OID_LENGTH(MeterTableEntry_oid),
-					  HANDLER_CAN_RONLY)); */
    out->cont=1;
    if(pthread_create(&(out->work_thread), NULL, work_task, out))
    {
       fprintf(stderr, "pthread_create failed!\n");
    }
-   else
-      fprintf(stderr, "pthread success, index %ld\n", out->entry->MeterIndex);
    /* fprintf(stderr ,"End of init, index %ld listening below oid ", MeterIndex); 
       present_oid(MeterTableEntry_oid, OID_LENGTH(MeterTableEntry_oid)); */
    return out;
 } /* init_driver */
 
-static void final_cleanup(void)
-{
-   free(pMeterEntries);
-   pMeterEntries=NULL;
-} /* final_cleanup */
-
-void remove_driver(void *driver)
+void remove_driver(void *driver, struct MeterTable_entry *entry)
 {
    struct instance *i = driver;
-   struct MeterTable_entry *entry;
 
    if(!i)
       return;
-   entry=i->entry;
    if (!entry)
       return;                 /* Nothing to remove */
    if(entry->valid == 1)
@@ -376,10 +203,6 @@ void remove_driver(void *driver)
    entry->valid=0;
    if(i->curl)
       curl_easy_cleanup(i->curl);
-   numRegisteredEntries--;
    i->cont = 0;
-   if(!numRegisteredEntries)
-      final_cleanup();
-   /* !!! - release any other internal resources (internal_data) */
 } /* remove_driver */
 

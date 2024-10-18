@@ -38,12 +38,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <curl/curl.h>
 
 #include "driver.h"
+#include "obis2snmp.h"
+#include <net-snmp/agent/util_funcs.h>
 
 struct driver_data {
    void *dlhandle;
    void *instance;
-   void *(*init_driver)(long, const char *);
-   void (*remove_driver)(void *);
+   void *(*init_driver)(struct MeterTable_entry *, const char *);
+   void (*remove_driver)(void *, struct MeterTable_entry *);
 };
 
 static int keep_running;
@@ -52,6 +54,68 @@ RETSIGTYPE
 stop_server(int a) {
     keep_running = 0;
 }
+
+static struct MeterTable_entry *pMeterEntries=NULL;
+static unsigned int MaxRegisteredEntry=0;
+
+
+static u_char *
+agent_h_meter(struct variable *vp, oid *name, size_t *length, int exact,
+    size_t *var_len, WriteMethod **write_method)
+{
+   static unsigned long long_ret;
+   unsigned int index;
+   struct MeterTable_entry *entry;
+
+   if (header_simple_table(vp, name, length, exact, var_len, write_method, -1))
+      return NULL;
+   index = name[*length -1];
+   /* fprintf(stderr, "index: %d\n", index); */
+   if(index > MaxRegisteredEntry) return NULL;
+   entry = &(pMeterEntries[index-1]);
+   /* fprintf(stderr, "low enough\n", index); */
+   
+   /* fprintf(stderr, "vp: %p\n", vp);
+   fprintf(stderr, "magic: %d\n", vp->magic);
+   fprintf(stderr, "lengthp: %p\n", length);
+   fprintf(stderr, "length: %d\n", *length);
+   fprintf(stderr, "oid: ");
+   for(long_ret=0; long_ret<*length; long_ret++) 
+   fprintf(stderr, "%d.", name[long_ret]); */
+   switch (vp->magic) {
+      case COLUMN_METERINDEX:
+	 long_ret  = index;
+	 return (u_char *)&long_ret;
+      case COLUMN_METERTYPE:
+	 if(!entry->MeterType_len)
+	    return NULL;
+	 else
+	 {
+	    *var_len = entry->MeterType_len;
+	    return (u_char *) entry->MeterType;
+	 }
+      case COLUMN_METERIP:
+	 *var_len = entry->MeterIP_len;
+	 return (u_char *) entry->MeterIP;
+      case COLUMN_METERMAC:
+	 if(!entry->MeterMAC_len)
+	    return NULL;
+	 else
+	 {
+	    *var_len = entry->MeterMAC_len;
+	    return (u_char *) entry->MeterMAC;
+	 }
+      case COLUMN_METERRSSI:
+	 long_ret  = entry->MeterRSSI;
+	 return (u_char *)&long_ret;
+      case COLUMN_METERMULTIPLIER:
+	 long_ret  = entry->MeterMultiplier;
+	 return (u_char *)&long_ret;
+      default:
+	 break;
+   }
+   return NULL;
+} /* agent_h_meter */
 
 int
 main (int argc, char **argv) {
@@ -102,12 +166,18 @@ main (int argc, char **argv) {
      exit(EXIT_FAILURE);
   }
   num_meters = json_object_array_length(meter_array);
+  MaxRegisteredEntry = num_meters;
   if(num_meters < 1) {
      snmp_log(LOG_CRIT,"File %s does not have any meters in array!\n",
 	      conffile);
      exit(EXIT_FAILURE);
   }
+  pMeterEntries = calloc(num_meters, sizeof(struct MeterTable_entry));
   drivers = calloc(num_meters, sizeof(struct driver_data));
+  if((!drivers)||(!pMeterEntries)) {
+     snmp_log(LOG_CRIT,"Calloc failed!\n");
+     exit(EXIT_FAILURE);
+  }
   /* initialize the agent library */
   init_agent("MeterTable");
 
@@ -136,7 +206,57 @@ main (int argc, char **argv) {
 	{
 	   drivers[i].remove_driver = dlsym(drivers[i].dlhandle,
 					    "remove_driver");
-	   drivers[i].instance = drivers[i].init_driver(i+1, parameters);
+	   drivers[i].instance = drivers[i].init_driver(&pMeterEntries[i],
+							parameters);
+	   if(pMeterEntries[i].valid)
+	   {
+	      struct variable8 agent_meter_vars[6]= {
+		 { COLUMN_METERINDEX, ASN_INTEGER, RONLY, agent_h_meter, 1, { COLUMN_METERINDEX } },
+		 { COLUMN_METERTYPE, ASN_OCTET_STR, RONLY, agent_h_meter, 1, { COLUMN_METERTYPE } },
+		 { COLUMN_METERIP, ASN_OCTET_STR, RONLY, agent_h_meter, 1, { COLUMN_METERIP } },
+		 { COLUMN_METERMAC, ASN_OCTET_STR, RONLY, agent_h_meter, 1, { COLUMN_METERMAC } },
+		 { COLUMN_METERRSSI, ASN_INTEGER, RONLY, agent_h_meter, 1, { COLUMN_METERRSSI } },
+		 { COLUMN_METERMULTIPLIER, ASN_INTEGER, RONLY, agent_h_meter, 1, { COLUMN_METERMULTIPLIER } },
+	      };
+	      size_t num_vars = 1; /* We allways have an index */
+	      oid       MeterTableEntry_oid[MeterTable_oid_len+1];
+
+	      memcpy(MeterTableEntry_oid, MeterTable_oid, MeterTable_oid_len*sizeof(oid));
+	      MeterTableEntry_oid[MeterTable_oid_len] = 1;
+
+	      if(pMeterEntries[i].MeterType_len)
+		 num_vars++;
+	      else
+		 memmove(&agent_meter_vars[num_vars], &agent_meter_vars[num_vars+1], (5-num_vars)*sizeof(struct variable8));
+	      if(pMeterEntries[i].MeterIP_len)
+		 num_vars++;
+	      else
+		 memmove(&agent_meter_vars[num_vars], &agent_meter_vars[num_vars+1], (5-num_vars)*sizeof(struct variable8));
+	      if(pMeterEntries[i].MeterMAC_len)
+		 num_vars++;
+	      else
+		 memmove(&agent_meter_vars[num_vars], &agent_meter_vars[num_vars+1], (5-num_vars)*sizeof(struct variable8));
+	      if(pMeterEntries[i].MeterRSSI)
+		 num_vars++;
+	      else
+		 memmove(&agent_meter_vars[num_vars], &agent_meter_vars[num_vars+1], (5-num_vars)*sizeof(struct variable8));
+	      num_vars++; /* Multiplier should allways be valid */
+	      if (register_mib_range("Meter",
+				     (struct variable *) agent_meter_vars,
+				     sizeof(struct variable8),
+				     num_vars,
+				     MeterTableEntry_oid,
+				     sizeof(MeterTableEntry_oid)/sizeof(oid),
+				     DEFAULT_MIB_PRIORITY,
+				     i+1,
+				     i+2,
+				     NULL) !=
+		  MIB_REGISTERED_OK)
+	      {
+		 DEBUGMSGTL(("register_mib", "%s registration failed\n", descr));
+	      } 
+	      
+	   }
 	}
 	else
 	{
@@ -181,7 +301,7 @@ main (int argc, char **argv) {
   }
   for(i=0; i<num_meters; i++){
      if(drivers[i].remove_driver)
-	drivers[i].remove_driver(drivers[i].instance);
+	drivers[i].remove_driver(drivers[i].instance, &pMeterEntries[i]);
   }
   /* at shutdown time */
   snmp_shutdown("MeterTable");
@@ -190,6 +310,7 @@ main (int argc, char **argv) {
   curl_global_cleanup();
 
   free(drivers);
+  free(pMeterEntries);
   return 0;
 }
 

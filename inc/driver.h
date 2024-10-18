@@ -32,20 +32,22 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define DRIVER_H
 
 struct MeterTable_entry {
-    char            MeterType[255];
-    size_t          MeterType_len;
-    char            MeterIP[255];
-    size_t          MeterIP_len;
-    char            MeterMAC[255];
-    size_t          MeterMAC_len;
-    long            MeterRSSI;
-    long            MeterMultiplier;
+   char            MeterType[255]; /* set by init_driver if used */
+   size_t          MeterType_len; /* set to strlen(MeterType) by init_driver */
+   char            MeterIP[255]; /* set by init_driver if used */
+   size_t          MeterIP_len; /* set to strlen(MeterIP) by init_driver */
+   char            MeterMAC[255]; /* set by init_driver if used */
+   size_t          MeterMAC_len; /* set to strlen(MeterMAC) by init_driver */
+   long            MeterRSSI; /* set to nonzero by init_driver if used,
+				 updated by update_data_data */
+   long            MeterMultiplier;  /* set by init_driver */
 
-    int             valid;
+   int             valid; /* set to non zero by init_driver at success */
 };
 
 extern void *init_driver(struct MeterTable_entry *out_data,
 			 const char *parameters);
-void remove_driver(void *driver, struct MeterTable_entry *out_data);
+void update_driver_data(void *driver, struct MeterTable_entry *work_data);
+void remove_driver(void *driver, struct MeterTable_entry *work_data);
 
 #endif
