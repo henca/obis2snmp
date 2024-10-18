@@ -297,8 +297,8 @@ main (int argc, char **argv) {
   while(keep_running) {
     /* if you use select(), see snmp_select_info() in snmp_api(3) */
     /*     --- OR ---  */
-    agent_check_and_process(1); /* 0 == don't block */
-    printf("checked...\n");
+    
+    printf("checked...%d\n", agent_check_and_process(1) /* 0 == don't block */);
   }
   for(i=0; i<num_meters; i++){
      if(drivers[i].remove_driver)
