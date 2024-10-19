@@ -372,6 +372,9 @@ main (int argc, char **argv) {
 				   descr));
 		       fprintf(stderr, "obis registration failed\n");
 		    }
+		    else
+		       fprintf(stderr, "obis registration success\n");
+		       
 		 }
 	      }
 	   }
