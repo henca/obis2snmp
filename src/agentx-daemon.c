@@ -79,12 +79,15 @@ agent_h_obis(struct variable *vp, oid *name, size_t *length, int exact,
    if(obis_index >= pMeterEntries[index-1].numObisEntries)
       return NULL;
    obis = &(pMeterEntries[index-1].ObisEntries[obis_index]);
-   fprintf(stderr, "before switch\n");
+   fprintf(stderr, "before switch %ld vs %ld\n", name[*length -7], COLUMN_METEROBISDESCRIPTION);
    switch(name[*length -7])
    {
       case COLUMN_METEROBISDESCRIPTION:
 	 if(!obis->description_len)
+	 {
+	    fprintf(stderr, "len not set\n");
 	    return NULL;
+	 }
 	 else
 	 {
 	    fprintf(stderr, "returning description\n");
