@@ -179,15 +179,27 @@ void *init_driver(struct MeterTable_entry *entry,
       curl_easy_setopt(out->curl, CURLOPT_WRITEDATA, (void *)out);
       curl_easy_perform(out->curl);
    }
+#if 0
    out->cont=1;
    if(pthread_create(&(out->work_thread), NULL, work_task, out))
    {
       fprintf(stderr, "pthread_create failed!\n");
    }
+#endif
    /* fprintf(stderr ,"End of init, index %ld listening below oid ", MeterIndex); 
       present_oid(MeterTableEntry_oid, OID_LENGTH(MeterTableEntry_oid)); */
    return out;
 } /* init_driver */
+
+void update_driver_data(void *driver, struct MeterTable_entry *entry)
+{
+   struct instance *i = driver;
+
+   if(!i)
+      return;
+
+   curl_easy_perform(i->curl);
+} /* update_driver_data */
 
 void remove_driver(void *driver, struct MeterTable_entry *entry)
 {

@@ -35,6 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <signal.h>
 #include <dlfcn.h>
 #include <libgen.h>
+#include <time.h>
 #include <curl/curl.h>
 
 #include "driver.h"
@@ -45,6 +46,7 @@ struct driver_data {
    void *dlhandle;
    void *instance;
    void *(*init_driver)(struct MeterTable_entry *, const char *);
+   void (*update_driver_data)(void *, struct MeterTable_entry *);
    void (*remove_driver)(void *, struct MeterTable_entry *);
 };
 
@@ -130,6 +132,8 @@ main (int argc, char **argv) {
   int i;
   struct driver_data *drivers=NULL;
   char driver_path[256];
+  time_t last_time_updated=0;
+  time_t current_time;
 
   curl_global_init(CURL_GLOBAL_NOTHING);
   
@@ -204,6 +208,8 @@ main (int argc, char **argv) {
 	drivers[i].init_driver = dlsym(drivers[i].dlhandle, "init_driver");
 	if(drivers[i].init_driver)
 	{
+	   drivers[i].update_driver_data = dlsym(drivers[i].dlhandle,
+						 "update_driver_data");
 	   drivers[i].remove_driver = dlsym(drivers[i].dlhandle,
 					    "remove_driver");
 	   drivers[i].instance = drivers[i].init_driver(&pMeterEntries[i],
@@ -297,11 +303,16 @@ main (int argc, char **argv) {
   while(keep_running) {
     /* if you use select(), see snmp_select_info() in snmp_api(3) */
     /*     --- OR ---  */
-   time_t t;
-    printf("checked...%d\n", agent_check_and_process(1) /* 0 == don't block */);
-   time(&t);
-   printf(ctime(&t));
-    
+     i=agent_check_and_process(1); /* 0 == don't block */
+     time(&current_time);
+     if((!i) || ((current_time - last_time_updated) > 10))
+     {
+	last_time_updated = current_time;
+	for(i=0; i<num_meters;i++)
+	   if(drivers[i].update_driver_data)
+	      drivers[i].update_driver_data(drivers[i].instance,
+					    &pMeterEntries[i]);
+     }
   }
   for(i=0; i<num_meters; i++){
      if(drivers[i].remove_driver)
