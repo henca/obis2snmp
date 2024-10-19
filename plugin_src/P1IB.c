@@ -37,25 +37,7 @@ struct instance
 {
    struct MeterTable_entry *entry;
    CURL *curl;
-   int cont;
-   pthread_t work_thread;
 };
-
-
-static void *work_task(void *in)
-{
-   struct instance *i = in;
-
-   while(i->cont)
-   {
-      curl_easy_perform(i->curl);
-      sleep(10);
-      /* fprintf(stderr, "work thread %ld slept\n", i->entry->MeterIndex); */
-   }
-   free(i);
-   fprintf(stderr, "work thread done\n");
-   return NULL;
-} /* work_task */
 
 static size_t my_curl_callback(void *buffer, size_t size, size_t nmemb, void *userp)
 {
@@ -215,6 +197,6 @@ void remove_driver(void *driver, struct MeterTable_entry *entry)
    entry->valid=0;
    if(i->curl)
       curl_easy_cleanup(i->curl);
-   i->cont = 0;
+   i->curl = NULL;
 } /* remove_driver */
 
