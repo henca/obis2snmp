@@ -66,7 +66,8 @@ agent_h_obis(struct variable *vp, oid *name, size_t *length, int exact,
 {
    unsigned int index;
    unsigned int obis_index;
-
+   
+   fprintf(stderr, "obis callback\n");
    if (header_simple_table(vp, name, length, exact, var_len, write_method, -1))
       return NULL;
    if(*length < 10)
@@ -298,6 +299,7 @@ main (int argc, char **argv) {
 	      {
 		 oid oid_name[6][MAX_OID_LEN];
 		 int j,r;
+		 fprintf(stderr, "Adding obis index %d\n", o);
 		 for(r=0;r<6;r++)
 		 {
 		    oid_name[r][0] = r+COLUMN_METEROBISDESCRIPTION;
