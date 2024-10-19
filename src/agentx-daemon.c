@@ -90,7 +90,7 @@ agent_h_obis(struct variable *vp, oid *name, size_t *length, int exact,
 	 }
 	 else
 	 {
-	    fprintf(stderr, "returning description\n");
+	    fprintf(stderr, "returning description '%s' len %ld\n", obis->description,obis->description_len);
 	    *var_len = obis->description_len;
 	    return (u_char *) obis->description;
 	 }
