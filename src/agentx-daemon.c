@@ -370,6 +370,7 @@ main (int argc, char **argv) {
 		    {
 		       DEBUGMSGTL(("register_mib", "%s registration failed\n",
 				   descr));
+		       fprintf(stderr, "obis registration failed\n");
 		    }
 		 }
 	      }
