@@ -60,6 +60,23 @@ stop_server(int a) {
 static struct MeterTable_entry *pMeterEntries=NULL;
 static unsigned int MaxRegisteredEntry=0;
 
+static u_char *
+agent_h_obis(struct variable *vp, oid *name, size_t *length, int exact,
+    size_t *var_len, WriteMethod **write_method)
+{
+   unsigned int index;
+   unsigned int obis_index;
+
+   if (header_simple_table(vp, name, length, exact, var_len, write_method, -1))
+      return NULL;
+   if(*length < 10)
+      return NULL;
+   index = name[*length -1];
+   if(index > MaxRegisteredEntry) return NULL;
+   obis_index = vp->magic;
+   fprintf(stderr, "obis oid: %ld\n", name[*length -7]);
+   return NULL;
+} /* agent_h_obis */
 
 static u_char *
 agent_h_meter(struct variable *vp, oid *name, size_t *length, int exact,
@@ -129,7 +146,7 @@ main (int argc, char **argv) {
   const char *driver;
   const char *parameters;
   int num_meters;
-  int i;
+  int i, o;
   struct driver_data *drivers=NULL;
   char driver_path[256];
   time_t last_time_updated=0;
@@ -217,35 +234,50 @@ main (int argc, char **argv) {
 	   if(pMeterEntries[i].valid)
 	   {
 	      struct variable8 agent_meter_vars[6]= {
-		 { COLUMN_METERINDEX, ASN_INTEGER, RONLY, agent_h_meter, 1, { COLUMN_METERINDEX } },
-		 { COLUMN_METERTYPE, ASN_OCTET_STR, RONLY, agent_h_meter, 1, { COLUMN_METERTYPE } },
-		 { COLUMN_METERIP, ASN_OCTET_STR, RONLY, agent_h_meter, 1, { COLUMN_METERIP } },
-		 { COLUMN_METERMAC, ASN_OCTET_STR, RONLY, agent_h_meter, 1, { COLUMN_METERMAC } },
-		 { COLUMN_METERRSSI, ASN_INTEGER, RONLY, agent_h_meter, 1, { COLUMN_METERRSSI } },
-		 { COLUMN_METERMULTIPLIER, ASN_INTEGER, RONLY, agent_h_meter, 1, { COLUMN_METERMULTIPLIER } },
+		 { COLUMN_METERINDEX, ASN_INTEGER, RONLY, agent_h_meter,
+		   1, { COLUMN_METERINDEX } },
+		 { COLUMN_METERTYPE, ASN_OCTET_STR, RONLY, agent_h_meter,
+		   1, { COLUMN_METERTYPE } },
+		 { COLUMN_METERIP, ASN_OCTET_STR, RONLY, agent_h_meter,
+		   1, { COLUMN_METERIP } },
+		 { COLUMN_METERMAC, ASN_OCTET_STR, RONLY, agent_h_meter,
+		   1, { COLUMN_METERMAC } },
+		 { COLUMN_METERRSSI, ASN_INTEGER, RONLY, agent_h_meter,
+		   1, { COLUMN_METERRSSI } },
+		 { COLUMN_METERMULTIPLIER, ASN_INTEGER, RONLY, agent_h_meter,
+		   1, { COLUMN_METERMULTIPLIER } },
 	      };
 	      size_t num_vars = 1; /* We allways have an index */
 	      oid       MeterTableEntry_oid[MeterTable_oid_len+1];
 
-	      memcpy(MeterTableEntry_oid, MeterTable_oid, MeterTable_oid_len*sizeof(oid));
+	      memcpy(MeterTableEntry_oid, MeterTable_oid,
+		     MeterTable_oid_len*sizeof(oid));
 	      MeterTableEntry_oid[MeterTable_oid_len] = 1;
 
 	      if(pMeterEntries[i].MeterType_len)
 		 num_vars++;
 	      else
-		 memmove(&agent_meter_vars[num_vars], &agent_meter_vars[num_vars+1], (5-num_vars)*sizeof(struct variable8));
+		 memmove(&agent_meter_vars[num_vars],
+			 &agent_meter_vars[num_vars+1],
+			 (5-num_vars)*sizeof(struct variable8));
 	      if(pMeterEntries[i].MeterIP_len)
 		 num_vars++;
 	      else
-		 memmove(&agent_meter_vars[num_vars], &agent_meter_vars[num_vars+1], (5-num_vars)*sizeof(struct variable8));
+		 memmove(&agent_meter_vars[num_vars],
+			 &agent_meter_vars[num_vars+1],
+			 (5-num_vars)*sizeof(struct variable8));
 	      if(pMeterEntries[i].MeterMAC_len)
 		 num_vars++;
 	      else
-		 memmove(&agent_meter_vars[num_vars], &agent_meter_vars[num_vars+1], (5-num_vars)*sizeof(struct variable8));
+		 memmove(&agent_meter_vars[num_vars],
+			 &agent_meter_vars[num_vars+1],
+			 (5-num_vars)*sizeof(struct variable8));
 	      if(pMeterEntries[i].MeterRSSI)
 		 num_vars++;
 	      else
-		 memmove(&agent_meter_vars[num_vars], &agent_meter_vars[num_vars+1], (5-num_vars)*sizeof(struct variable8));
+		 memmove(&agent_meter_vars[num_vars],
+			 &agent_meter_vars[num_vars+1],
+			 (5-num_vars)*sizeof(struct variable8));
 	      num_vars++; /* Multiplier should allways be valid */
 	      if (register_mib_range("Meter",
 				     (struct variable *) agent_meter_vars,
@@ -259,9 +291,86 @@ main (int argc, char **argv) {
 				     NULL) !=
 		  MIB_REGISTERED_OK)
 	      {
-		 DEBUGMSGTL(("register_mib", "%s registration failed\n", descr));
-	      } 
-	      
+		 DEBUGMSGTL(("register_mib", "%s registration failed\n",
+			     descr));
+	      }
+	      for(o=0; o < pMeterEntries[i].numObisEntries; o++)
+	      {
+		 oid oid_name[6][MAX_OID_LEN];
+		 int j,r;
+		 for(r=0;r<6;r++)
+		 {
+		    oid_name[r][0] = r+COLUMN_METEROBISDESCRIPTION;
+		    for(j=0;j<4;j++)
+		    {
+		       oid_name[r][j+1] =
+			  pMeterEntries[i].ObisEntries[o].obis_oid[j];
+		    }
+		 }
+		 {
+		    struct variable8 agent_obis_vars[6]= {
+		       { o, ASN_OCTET_STR, RONLY, agent_h_obis, 6,
+			 {oid_name[0][0],oid_name[0][1],oid_name[0][2],
+			  oid_name[0][3],oid_name[0][4],oid_name[0][5]} },
+		       { o, ASN_OCTET_STR, RONLY, agent_h_obis, 6,
+			 {oid_name[1][0],oid_name[1][1],oid_name[1][2],
+			  oid_name[1][3],oid_name[1][4],oid_name[1][5]} },
+		       { o, ASN_INTEGER,   RONLY, agent_h_obis, 6,
+			 {oid_name[2][0],oid_name[2][1],oid_name[2][2],
+			  oid_name[2][3],oid_name[2][4],oid_name[2][5]} },
+		       { o, ASN_INTEGER,   RONLY, agent_h_obis, 6,
+			 {oid_name[3][0],oid_name[3][1],oid_name[3][2],
+			  oid_name[3][3],oid_name[3][4],oid_name[3][5]} },
+		       { o, ASN_INTEGER,   RONLY, agent_h_obis, 6,
+			 {oid_name[4][0],oid_name[4][1],oid_name[4][2],
+			  oid_name[4][3],oid_name[4][4],oid_name[4][5]} },
+		       { o, ASN_INTEGER,   RONLY, agent_h_obis, 6,
+			 {oid_name[5][0],oid_name[5][1],oid_name[5][2],
+			  oid_name[5][3],oid_name[5][4],oid_name[5][5]} },
+		    };
+		    num_vars = 2; /* We allways have description and unit */
+		    if(pMeterEntries[i].ObisEntries[o].latest_is_valid)
+		       num_vars++;
+		    else
+		       memmove(&agent_obis_vars[num_vars],
+			       &agent_obis_vars[num_vars+1],
+			       (5-num_vars)*sizeof(struct variable8));
+		    if(pMeterEntries[i].ObisEntries[o].mean5m_is_valid)
+		       num_vars++;
+		    else
+		       memmove(&agent_obis_vars[num_vars],
+			       &agent_obis_vars[num_vars+1],
+			       (5-num_vars)*sizeof(struct variable8));
+		    if(pMeterEntries[i].ObisEntries[o].max5m_is_valid)
+		       num_vars++;
+		    else
+		       memmove(&agent_obis_vars[num_vars],
+			       &agent_obis_vars[num_vars+1],
+			       (5-num_vars)*sizeof(struct variable8));
+		    if(pMeterEntries[i].ObisEntries[o].min5m_is_valid)
+		       num_vars++;
+		    else
+		       memmove(&agent_obis_vars[num_vars],
+			       &agent_obis_vars[num_vars+1],
+			       (5-num_vars)*sizeof(struct variable8));
+		    if (register_mib_range("Meter",
+					   (struct variable *)agent_meter_vars,
+					   sizeof(struct variable8),
+					   num_vars,
+					   MeterTableEntry_oid,
+					   sizeof(MeterTableEntry_oid) /
+					     sizeof(oid),
+					   DEFAULT_MIB_PRIORITY,
+					   i+1,
+					   i+2,
+					   NULL) !=
+			MIB_REGISTERED_OK)
+		    {
+		       DEBUGMSGTL(("register_mib", "%s registration failed\n",
+				   descr));
+		    }
+		 }
+	      }
 	   }
 	}
 	else

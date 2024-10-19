@@ -109,6 +109,11 @@ void *init_driver(struct MeterTable_entry *entry,
 		  const char *parameters)
 {
    char *pc;
+   const struct obis_data driver_obis[] = {
+      {{1,0,1,8,0}, "1-0:1.8.0",
+       "Total active energy consumed from grid", "kWh",
+       1, 0, 0, 0, 0, 0, 0, 0},
+   };
    struct instance *out = malloc(sizeof(struct instance));
 
    if(!out)
@@ -151,6 +156,12 @@ void *init_driver(struct MeterTable_entry *entry,
    /* initialize other parts of entry */
    entry->MeterMAC[0]=0;
    entry->MeterMAC_len=0;
+   entry->numObisEntries = sizeof(driver_obis)/sizeof(struct obis_data);
+   entry->ObisEntries = malloc(sizeof(driver_obis)*sizeof(struct obis_data));
+   if(!entry->ObisEntries)
+      entry->numObisEntries = 0;
+   else
+      memcpy(entry->ObisEntries, driver_obis, sizeof(driver_obis));
    if(entry->MeterIP_len)
    {
       char url[256];
@@ -195,5 +206,11 @@ void remove_driver(void *driver, struct MeterTable_entry *entry)
    if(i->curl)
       curl_easy_cleanup(i->curl);
    i->curl = NULL;
+   if(entry->numObisEntries)
+   {
+      free(entry->ObisEntries);
+      entry->ObisEntries = NULL;
+      entry->numObisEntries = 0;
+   }
 } /* remove_driver */
 
