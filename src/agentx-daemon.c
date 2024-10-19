@@ -79,6 +79,7 @@ agent_h_obis(struct variable *vp, oid *name, size_t *length, int exact,
    if(obis_index >= pMeterEntries[index-1].numObisEntries)
       return NULL;
    obis = &(pMeterEntries[index-1].ObisEntries[obis_index]);
+   fprintf(stderr, "before switch\n");
    switch(name[*length -7])
    {
       case COLUMN_METEROBISDESCRIPTION:
@@ -86,6 +87,7 @@ agent_h_obis(struct variable *vp, oid *name, size_t *length, int exact,
 	    return NULL;
 	 else
 	 {
+	    fprintf(stderr, "returning description\n");
 	    *var_len = obis->description_len;
 	    return (u_char *) obis->description;
 	 }
