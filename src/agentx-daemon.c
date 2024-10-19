@@ -66,16 +66,32 @@ agent_h_obis(struct variable *vp, oid *name, size_t *length, int exact,
 {
    unsigned int index;
    unsigned int obis_index;
+   struct obis_data *obis;
    
    fprintf(stderr, "obis callback\n");
    if (header_simple_table(vp, name, length, exact, var_len, write_method, -1))
       return NULL;
-   if(*length < 10)
+   if(*length < 8)
       return NULL;
    index = name[*length -1];
    if(index > MaxRegisteredEntry) return NULL;
    obis_index = vp->magic;
-   fprintf(stderr, "obis oid: %ld\n", name[*length -7]);
+   if(obis_index >= pMeterEntries[index-1].numObisEntries)
+      return NULL;
+   obis = &(pMeterEntries[index-1].ObisEntries[obis_index]);
+   switch(name[*length -7])
+   {
+      case COLUMN_METEROBISDESCRIPTION:
+	 if(!obis->description_len)
+	    return NULL;
+	 else
+	 {
+	    *var_len = obis->description_len;
+	    return (u_char *) obis->description;
+	 }
+      default:
+	 break;
+   }
    return NULL;
 } /* agent_h_obis */
 
@@ -299,7 +315,10 @@ main (int argc, char **argv) {
 	      {
 		 oid oid_name[6][MAX_OID_LEN];
 		 int j,r;
-		 fprintf(stderr, "Adding obis index %d\n", o);
+		 pMeterEntries[i].ObisEntries[o].description_len =
+		    strlen(pMeterEntries[i].ObisEntries[o].description);
+		 pMeterEntries[i].ObisEntries[o].unit_len =
+		    strlen(pMeterEntries[i].ObisEntries[o].unit);
 		 for(r=0;r<6;r++)
 		 {
 		    oid_name[r][0] = r+COLUMN_METEROBISDESCRIPTION;
@@ -370,11 +389,7 @@ main (int argc, char **argv) {
 		    {
 		       DEBUGMSGTL(("register_mib", "%s registration failed\n",
 				   descr));
-		       fprintf(stderr, "obis registration failed\n");
 		    }
-		    else
-		       fprintf(stderr, "obis registration success\n");
-		       
 		 }
 	      }
 	   }

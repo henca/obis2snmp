@@ -111,7 +111,7 @@ void *init_driver(struct MeterTable_entry *entry,
    char *pc;
    const struct obis_data driver_obis[] = {
       {{1,0,1,8,0}, "1-0:1.8.0",
-       "Total active energy consumed from grid", "kWh",
+       "Total active energy consumed from grid", 0, "kWh", 0,
        1, 0, 0, 0, 0, 0, 0, 0},
    };
    struct instance *out = malloc(sizeof(struct instance));

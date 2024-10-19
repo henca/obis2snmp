@@ -38,7 +38,9 @@ struct obis_data {
    oid obis_oid[5];       /* mandatory {A,B,C,D} A-B:C.D.E */
    char obis_string[50];  /* optional for drivers internal use */
    char description[255]; /* mandatory description of value */
+   size_t description_len;/* will later be set by calling agent */
    char unit[255];        /* mandatory unit of original obis float value */
+   size_t unit_len;       /* will later be set by calling agent */
    int latest_is_valid;   /* mandatory, 0 if not used latest */
    long latest_value;     /* rounded obis float*MeterMultiplier if valid */
    int mean5m_is_valid;   /* mandatory, 0 if not used 5 minute mean */
