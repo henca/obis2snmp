@@ -356,7 +356,7 @@ main (int argc, char **argv) {
 			       &agent_obis_vars[num_vars+1],
 			       (5-num_vars)*sizeof(struct variable8));
 		    if (register_mib_range("Meter",
-					   (struct variable *)agent_meter_vars,
+					   (struct variable *)agent_obis_vars,
 					   sizeof(struct variable8),
 					   num_vars,
 					   MeterTableEntry_oid,
