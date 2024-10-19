@@ -191,9 +191,6 @@ void remove_driver(void *driver, struct MeterTable_entry *entry)
       return;
    if (!entry)
       return;                 /* Nothing to remove */
-   if(entry->valid == 1)
-   {
-   }
    entry->valid=0;
    if(i->curl)
       curl_easy_cleanup(i->curl);

@@ -65,7 +65,7 @@ static u_char *
 agent_h_meter(struct variable *vp, oid *name, size_t *length, int exact,
     size_t *var_len, WriteMethod **write_method)
 {
-   static unsigned long long_ret;
+   static long long_ret;
    unsigned int index;
    struct MeterTable_entry *entry;
 
