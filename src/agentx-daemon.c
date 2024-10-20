@@ -341,7 +341,7 @@ main (int argc, char **argv) {
 		 for(r=0;r<6;r++)
 		 {
 		    oid_name[r][0] = r+COLUMN_METEROBISDESCRIPTION;
-		    for(j=0;j<4;j++)
+		    for(j=0;j<5;j++)
 		    {
 		       oid_name[r][j+1] =
 			  pMeterEntries[i].ObisEntries[o].obis_oid[j];
