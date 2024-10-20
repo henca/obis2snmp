@@ -133,7 +133,7 @@ static size_t my_curl_callback(void *buffer, size_t size, size_t nmemb, void *us
 	       {
 		  entry->MeterRSSI = json_object_get_int(tmp_json);
 	       }
-	       tmp_json = json_object_object_get(info_json, "299840");
+	       tmp_json = json_object_object_get(info_json, "resetCnt");
 	       if(tmp_json)
 	       {
 		  fill_obis_data(json_object_get_int64(tmp_json),
