@@ -60,6 +60,19 @@ stop_server(int a) {
 static struct MeterTable_entry *pMeterEntries=NULL;
 static unsigned int MaxRegisteredEntry=0;
 
+static void present_oid(oid o[], size_t l)
+{
+   size_t i;
+
+   for(i=0; i<l; i++)
+   {
+      fprintf(stderr, "%ld", o[i]);
+      if(i<(l-1))
+         fprintf(stderr, ".");
+   }
+   fprintf(stderr, "\n");
+} /* present_oid */
+
 static u_char *
 agent_h_obis(struct variable *vp, oid *name, size_t *length, int exact,
     size_t *var_len, WriteMethod **write_method)
@@ -69,6 +82,7 @@ agent_h_obis(struct variable *vp, oid *name, size_t *length, int exact,
    struct obis_data *obis;
    
    fprintf(stderr, "obis callback\n");
+   present_oid(name, *length);
    if (header_simple_table(vp, name, length, exact, var_len, write_method, -1))
       return NULL;
    if(*length < 8)
