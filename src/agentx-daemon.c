@@ -60,6 +60,8 @@ stop_server(int a) {
 static struct MeterTable_entry *pMeterEntries=NULL;
 static unsigned int MaxRegisteredEntry=0;
 
+#if 0
+/* This function might be useful during development for debugging purposes */
 static void present_oid(oid o[], size_t l)
 {
    size_t i;
@@ -72,6 +74,7 @@ static void present_oid(oid o[], size_t l)
    }
    fprintf(stderr, "\n");
 } /* present_oid */
+#endif
 
 static u_char *
 agent_h_obis(struct variable *vp, oid *name, size_t *length, int exact,
@@ -122,6 +125,36 @@ agent_h_obis(struct variable *vp, oid *name, size_t *length, int exact,
 	 else
 	 {
 	    long_ret = obis->latest_value;
+	    return (u_char *) &long_ret;
+	 }
+      case COLUMN_METEROBIS5MINMEAN:
+	 if(!obis->mean5m_is_valid)
+	 {
+	    return NULL;
+	 }
+	 else
+	 {
+	    long_ret = obis->mean5m_value;
+	    return (u_char *) &long_ret;
+	 }
+      case COLUMN_METEROBIS5MINMAX:
+	 if(!obis->max5m_is_valid)
+	 {
+	    return NULL;
+	 }
+	 else
+	 {
+	    long_ret = obis->max5m_value;
+	    return (u_char *) &long_ret;
+	 }
+      case COLUMN_METEROBIS5MINMIN:
+	 if(!obis->min5m_is_valid)
+	 {
+	    return NULL;
+	 }
+	 else
+	 {
+	    long_ret = obis->min5m_value;
 	    return (u_char *) &long_ret;
 	 }
       default:
@@ -190,7 +223,7 @@ agent_h_meter(struct variable *vp, oid *name, size_t *length, int exact,
 
 int
 main (int argc, char **argv) {
-  int background = 0; /* change this if you not want to run in the background */
+  int background = 1; /* change if you not want to run in the background */
   int syslog = 1; /* change this if you not want to use syslog */
   char *conffile = ETC_DIR "/obsi2snmp_config.json";
   int opt;
@@ -261,7 +294,7 @@ main (int argc, char **argv) {
      parameters = json_object_get_string(
 	json_object_object_get(meter_obj, "parameters"));
 
-     printf("Driver: '%s' , parameters: '%s'\n", driver, parameters);
+     /* printf("Driver: '%s' , parameters: '%s'\n", driver, parameters); */
      snprintf(driver_path, 256, "%s.so", driver);
      /* printf("Trying to open: %s\n", driver_path); */
      drivers[i].dlhandle = dlopen(driver_path,  RTLD_NOW);

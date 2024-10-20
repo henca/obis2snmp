@@ -39,6 +39,45 @@ struct instance
    CURL *curl;
 };
 
+static void fill_obis_entry(int64_t obis_count,
+			    struct json_object *array_json,
+			    long multiplier,
+			    struct obis_data *ObisEntry)
+{
+   if(ObisEntry->latest_is_valid)
+   {
+      ObisEntry->latest_value =
+	 multiplier *
+	 json_object_get_double(json_object_array_get_idx(array_json, 9));
+   }
+} /* fill_obis_entry */
+
+static void fill_obis_data(int64_t obis_count,
+			   struct instance *inst,
+			   struct json_object *meter_json)
+{
+   if(inst && meter_json)
+   {
+      struct json_object *tmp_json;
+      struct MeterTable_entry *entry = inst->entry;
+      long multiplier = entry->MeterMultiplier;
+      struct json_object *d_json = json_object_object_get(meter_json, "d");
+      int i;
+
+      if(!d_json)
+	 return;
+
+      for(i=0; i<entry->numObisEntries; i++)
+      {
+	 tmp_json = json_object_object_get(d_json,
+					   entry->ObisEntries[i].obis_string);
+	 if(tmp_json)
+	    fill_obis_entry(obis_count, tmp_json, multiplier,
+			    &(entry->ObisEntries[i]));
+      }
+   }
+} /* fill_obis_data */
+
 static size_t my_curl_callback(void *buffer, size_t size, size_t nmemb, void *userp)
 {
    static size_t pos = 0;
@@ -93,6 +132,13 @@ static size_t my_curl_callback(void *buffer, size_t size, size_t nmemb, void *us
 	       if(tmp_json)
 	       {
 		  entry->MeterRSSI = json_object_get_int(tmp_json);
+	       }
+	       tmp_json = json_object_object_get(info_json, "299840");
+	       if(tmp_json)
+	       {
+		  fill_obis_data(json_object_get_int64(tmp_json),
+				 inst,
+				 meter_json);
 	       }
 	    }
 	    json_object_put(meter_json); /* free json stuff */
