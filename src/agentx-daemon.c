@@ -77,12 +77,11 @@ static u_char *
 agent_h_obis(struct variable *vp, oid *name, size_t *length, int exact,
     size_t *var_len, WriteMethod **write_method)
 {
+   static long long_ret;
    unsigned int index;
    unsigned int obis_index;
    struct obis_data *obis;
    
-   fprintf(stderr, "obis callback\n");
-   present_oid(name, *length);
    if (header_simple_table(vp, name, length, exact, var_len, write_method, -1))
       return NULL;
    if(*length < 8)
@@ -93,20 +92,37 @@ agent_h_obis(struct variable *vp, oid *name, size_t *length, int exact,
    if(obis_index >= pMeterEntries[index-1].numObisEntries)
       return NULL;
    obis = &(pMeterEntries[index-1].ObisEntries[obis_index]);
-   fprintf(stderr, "before switch %ld vs %ld\n", name[*length -7], COLUMN_METEROBISDESCRIPTION);
    switch(name[*length -7])
    {
       case COLUMN_METEROBISDESCRIPTION:
 	 if(!obis->description_len)
 	 {
-	    fprintf(stderr, "len not set\n");
 	    return NULL;
 	 }
 	 else
 	 {
-	    fprintf(stderr, "returning description '%s' len %ld\n", obis->description,obis->description_len);
 	    *var_len = obis->description_len;
 	    return (u_char *) obis->description;
+	 }
+      case COLUMN_METEROBISUNIT:
+	 if(!obis->unit_len)
+	 {
+	    return NULL;
+	 }
+	 else
+	 {
+	    *var_len = obis->unit_len;
+	    return (u_char *) obis->unit;
+	 }
+      case COLUMN_METEROBISLATEST:
+	 if(!obis->latest_is_valid)
+	 {
+	    return NULL;
+	 }
+	 else
+	 {
+	    long_ret = obis->latest_value;
+	    return (u_char *) &long_ret;
 	 }
       default:
 	 break;
