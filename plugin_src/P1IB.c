@@ -82,6 +82,8 @@ static double calc_min(unsigned int num_vals, double *values)
    return ret;
 } /* calc_min */
 
+#if 0
+/* might be useful to trace filtered data */
 static void present_arrays(const char *descr,
 			   struct json_object *array_json,
 			   double latest[6],
@@ -103,6 +105,7 @@ static void present_arrays(const char *descr,
       fprintf(stderr, "%7.3f ", filtered[i]);
    fprintf(stderr, "\n");
 }
+#endif
 
 static void init_obis_filter(struct json_object *array_json,
 			     struct obis_data *ObisEntry,
@@ -159,7 +162,6 @@ static void fill_obis_entry(unsigned int filter_pos,
 	 filter_data->mean[5] = calc_mean(6, d);
 	 ObisEntry->mean6m_value =
 	    multiplier * calc_mean(6, filter_data->mean);
-	 present_arrays("mean", array_json, d, filter_data->mean);
       }
       if(ObisEntry->max6m_is_valid)
       {
@@ -176,7 +178,6 @@ static void fill_obis_entry(unsigned int filter_pos,
 	 filter_data->min[5] = calc_min(6, d);
 	 ObisEntry->min6m_value =
 	    multiplier * calc_min(6, filter_data->min);
-	 present_arrays("min", array_json, d, filter_data->min);
       }
    }
 } /* fill_obis_entry */
@@ -322,6 +323,12 @@ void *init_driver(struct MeterTable_entry *entry,
        1, 0, 0, 0, 0, 0, 0, 0},
       {{1,0,32,7,0}, "1-0:32.7.0",
        "Instantaneous voltage (U) in phase L1", 0, "V", 0,
+       1, 0, 1, 0, 1, 0, 1, 0},
+      {{1,0,52,7,0}, "1-0:52.7.0",
+       "Instantaneous voltage (U) in phase L2", 0, "V", 0,
+       1, 0, 1, 0, 1, 0, 1, 0},
+      {{1,0,72,7,0}, "1-0:72.7.0",
+       "Instantaneous voltage (U) in phase L3", 0, "V", 0,
        1, 0, 1, 0, 1, 0, 1, 0},
    };
    struct instance *out = malloc(sizeof(struct instance));
