@@ -100,7 +100,8 @@ static void present_arrays(const char *descr,
       fprintf(stderr, "%7.3f ", latest[i]);
    fprintf(stderr, "\n filtered: ");
    for(i=0; i<6; i++)
-      fprintf(stderr, "%7.3f ", filtered[i]);   
+      fprintf(stderr, "%7.3f ", filtered[i]);
+   fprintf(stderr, "\n");
 }
 
 static void init_obis_filter(struct json_object *array_json,
