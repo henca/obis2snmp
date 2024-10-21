@@ -127,34 +127,34 @@ agent_h_obis(struct variable *vp, oid *name, size_t *length, int exact,
 	    long_ret = obis->latest_value;
 	    return (u_char *) &long_ret;
 	 }
-      case COLUMN_METEROBIS5MINMEAN:
-	 if(!obis->mean5m_is_valid)
+      case COLUMN_METEROBIS6MINMEAN:
+	 if(!obis->mean6m_is_valid)
 	 {
 	    return NULL;
 	 }
 	 else
 	 {
-	    long_ret = obis->mean5m_value;
+	    long_ret = obis->mean6m_value;
 	    return (u_char *) &long_ret;
 	 }
-      case COLUMN_METEROBIS5MINMAX:
-	 if(!obis->max5m_is_valid)
+      case COLUMN_METEROBIS6MINMAX:
+	 if(!obis->max6m_is_valid)
 	 {
 	    return NULL;
 	 }
 	 else
 	 {
-	    long_ret = obis->max5m_value;
+	    long_ret = obis->max6m_value;
 	    return (u_char *) &long_ret;
 	 }
-      case COLUMN_METEROBIS5MINMIN:
-	 if(!obis->min5m_is_valid)
+      case COLUMN_METEROBIS6MINMIN:
+	 if(!obis->min6m_is_valid)
 	 {
 	    return NULL;
 	 }
 	 else
 	 {
-	    long_ret = obis->min5m_value;
+	    long_ret = obis->min6m_value;
 	    return (u_char *) &long_ret;
 	 }
       default:
@@ -424,19 +424,19 @@ main (int argc, char **argv) {
 		       memmove(&agent_obis_vars[num_vars],
 			       &agent_obis_vars[num_vars+1],
 			       (5-num_vars)*sizeof(struct variable8));
-		    if(pMeterEntries[i].ObisEntries[o].mean5m_is_valid)
+		    if(pMeterEntries[i].ObisEntries[o].mean6m_is_valid)
 		       num_vars++;
 		    else
 		       memmove(&agent_obis_vars[num_vars],
 			       &agent_obis_vars[num_vars+1],
 			       (5-num_vars)*sizeof(struct variable8));
-		    if(pMeterEntries[i].ObisEntries[o].max5m_is_valid)
+		    if(pMeterEntries[i].ObisEntries[o].max6m_is_valid)
 		       num_vars++;
 		    else
 		       memmove(&agent_obis_vars[num_vars],
 			       &agent_obis_vars[num_vars+1],
 			       (5-num_vars)*sizeof(struct variable8));
-		    if(pMeterEntries[i].ObisEntries[o].min5m_is_valid)
+		    if(pMeterEntries[i].ObisEntries[o].min6m_is_valid)
 		       num_vars++;
 		    else
 		       memmove(&agent_obis_vars[num_vars],

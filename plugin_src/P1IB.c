@@ -35,10 +35,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 struct filtered
 {
-   /* values for each of the last 5 minutes */
-   double mean[5];
-   double max[5];
-   double min[5];
+   /* values for each of the last 6 minutes */
+   double mean[6];
+   double max[6];
+   double min[6];
 };
 
 struct instance
@@ -82,6 +82,32 @@ static double calc_min(unsigned int num_vals, double *values)
    return ret;
 } /* calc_min */
 
+static void init_obis_filter(struct json_object *array_json,
+			     struct obis_data *ObisEntry,
+			     struct filtered *filter_data)
+{
+   int i;
+   
+   if(ObisEntry->mean6m_is_valid)
+   {
+      for(i=0;i<6;i++)
+	 filter_data->mean[i] =
+	    json_object_get_double(json_object_array_get_idx(array_json, i));
+   }
+   if(ObisEntry->max6m_is_valid)
+   {
+      for(i=0;i<6;i++)
+	 filter_data->max[i] =
+	    json_object_get_double(json_object_array_get_idx(array_json, i));
+   }
+   if(ObisEntry->min6m_is_valid)
+   {
+      for(i=0;i<6;i++)
+	 filter_data->min[i] =
+	    json_object_get_double(json_object_array_get_idx(array_json, i));
+   }
+} /* init_obis_filter */
+
 static void fill_obis_entry(unsigned int filter_pos,
 			    struct json_object *array_json,
 			    long multiplier,
@@ -98,35 +124,35 @@ static void fill_obis_entry(unsigned int filter_pos,
 	 json_object_get_double(json_object_array_get_idx(array_json, 9));
    }
    if(filter_pos &&
-      (ObisEntry->mean5m_is_valid || ObisEntry->max5m_is_valid ||
-       ObisEntry->min5m_is_valid))
+      (ObisEntry->mean6m_is_valid || ObisEntry->max6m_is_valid ||
+       ObisEntry->min6m_is_valid))
    {
       for(i=0; i<6; i++)
 	 d[i] = json_object_get_double(json_object_array_get_idx(array_json,
 					  i+filter_pos));
-      if(ObisEntry->mean5m_is_valid)
+      if(ObisEntry->mean6m_is_valid)
       {
 	 memmove(&(filter_data->mean[0]), &(filter_data->mean[1]),
-		 4*sizeof(double));
-	 filter_data->mean[4] = calc_mean(6, d);
-	 ObisEntry->mean5m_value =
-	    multiplier * calc_mean(5, filter_data->mean);
+		 5*sizeof(double));
+	 filter_data->mean[5] = calc_mean(6, d);
+	 ObisEntry->mean6m_value =
+	    multiplier * calc_mean(6, filter_data->mean);
       }
-      if(ObisEntry->max5m_is_valid)
+      if(ObisEntry->max6m_is_valid)
       {
 	 memmove(&(filter_data->max[0]), &(filter_data->max[1]),
-		 4*sizeof(double));
-	 filter_data->max[4] = calc_max(6, d);
-	 ObisEntry->max5m_value =
-	    multiplier * calc_max(5, filter_data->max);
+		 5*sizeof(double));
+	 filter_data->max[5] = calc_max(6, d);
+	 ObisEntry->max6m_value =
+	    multiplier * calc_max(6, filter_data->max);
       }
-      if(ObisEntry->min5m_is_valid)
+      if(ObisEntry->min6m_is_valid)
       {
 	 memmove(&(filter_data->min[0]), &(filter_data->min[1]),
-		 4*sizeof(double));
-	 filter_data->min[4] = calc_min(6, d);
-	 ObisEntry->min5m_value =
-	    multiplier * calc_min(5, filter_data->min);
+		 5*sizeof(double));
+	 filter_data->min[5] = calc_min(6, d);
+	 ObisEntry->min6m_value =
+	    multiplier * calc_min(6, filter_data->min);
       }
    }
 } /* fill_obis_entry */
@@ -147,14 +173,43 @@ static void fill_obis_data(int64_t obis_count,
 
       if(!d_json)
 	 return;
-
-      for(i=0; i<entry->numObisEntries; i++)
+      if((!inst->last_obis_filter_update)&&(obis_count > 6))
       {
-	 tmp_json = json_object_object_get(d_json,
-					   entry->ObisEntries[i].obis_string);
-	 if(tmp_json)
-	    fill_obis_entry(filter_pos, tmp_json, multiplier,
-			    &(entry->ObisEntries[i]), inst->filter_data);
+	 for(i=0; i<entry->numObisEntries; i++)
+	 {
+	    tmp_json =
+	       json_object_object_get(d_json,
+				      entry->ObisEntries[i].obis_string);
+	    if(tmp_json)
+	       init_obis_filter(tmp_json,
+				&(entry->ObisEntries[i]),
+				&(inst->filter_data[i]));
+	 }
+	 inst->last_obis_filter_update = obis_count - 6;
+      }
+      else if(obis_count < inst->last_obis_filter_update)
+      {
+	 /* this will probably never happen, reset to a sane value */
+	 inst->last_obis_filter_update = obis_count - 3;
+      }
+      else if((obis_count - inst->last_obis_filter_update) > 10)
+      {
+	 /* we are late to the party, lets forget what we have missed */
+	 inst->last_obis_filter_update = obis_count - 10;
+      }
+      if((obis_count - inst->last_obis_filter_update) >= 6)
+      {
+	 filter_pos = 10 - (obis_count - inst->last_obis_filter_update);
+	 for(i=0; i<entry->numObisEntries; i++)
+	 {
+	    tmp_json =
+	       json_object_object_get(d_json,
+				      entry->ObisEntries[i].obis_string);
+	    if(tmp_json)
+	       fill_obis_entry(filter_pos, tmp_json, multiplier,
+			       &(entry->ObisEntries[i]),
+			       &(inst->filter_data[i]));
+	 }
       }
    }
 } /* fill_obis_data */
@@ -289,6 +344,7 @@ void *init_driver(struct MeterTable_entry *entry,
       entry->numObisEntries = 0;
    else
       memcpy(entry->ObisEntries, driver_obis, sizeof(driver_obis));
+   out->last_obis_filter_update=0;
    out->filter_data = calloc(entry->numObisEntries, sizeof(struct filtered));
    if(!out->filter_data)
        entry->numObisEntries = 0;

@@ -7,7 +7,7 @@ IMPORTS
         FROM SNMPv2-TC;
 
 HenrikCarlqvist MODULE-IDENTITY
-    LAST-UPDATED  "202410130000Z"
+    LAST-UPDATED  "202410210000Z"
     ORGANIZATION  "Henrik Carlqvist"
     CONTACT-INFO  "https://github.com/henca"
     DESCRIPTION   "
@@ -43,8 +43,8 @@ HenrikCarlqvist MODULE-IDENTITY
         with your own private enterprise number which you can apply for without
         any cost at
         https://www.iana.org/assignments/enterprise-numbers/assignment/apply/ "
-    REVISION      "202410130000Z"
-    DESCRIPTION   "Initial revision, with OBIS data from utility meters"
+    REVISION      "202410210000Z"
+    DESCRIPTION   "First official revision, with OBIS data from utility meters"
     ::= { enterprises 62368 }
 
 -- IEC 62056-21 OBIS OIDs for utility meters
@@ -148,21 +148,21 @@ MeterOBISlatest OBJECT-TYPE
     DESCRIPTION "Latest values that have been multiplied with given multiplier"
     ::= { Meter 9 }
 
-MeterOBIS5minMean OBJECT-TYPE
+MeterOBIS6minMean OBJECT-TYPE
     SYNTAX      Integer32
     MAX-ACCESS  not-accessible
     STATUS      current
     DESCRIPTION "5 minute mean values that have been multiplied with given multiplier"
     ::= { Meter 10 }
 
-MeterOBIS5minMax OBJECT-TYPE
+MeterOBIS6minMax OBJECT-TYPE
     SYNTAX      Integer32
     MAX-ACCESS  not-accessible
     STATUS      current
     DESCRIPTION "5 minute max values that have been multiplied with given multiplier"
     ::= { Meter 11 }
 
-MeterOBIS5minMin OBJECT-TYPE
+MeterOBIS6minMin OBJECT-TYPE
     SYNTAX      Integer32
     MAX-ACCESS  not-accessible
     STATUS      current

@@ -43,12 +43,12 @@ struct obis_data {
    size_t unit_len;       /* will later be set by calling agent */
    int latest_is_valid;   /* mandatory, 0 if not used latest */
    long latest_value;     /* obis float*MeterMultiplier if valid */
-   int mean5m_is_valid;   /* mandatory, 0 if not used 5 minute mean */
-   long mean5m_value;     /* mean float*MeterMultiplier if valid */
-   int max5m_is_valid;    /* mandatory, 0 if not used 5 minute max */
-   long max5m_value;      /* max float*MeterMultiplier if valid */
-   int min5m_is_valid;    /* mandatory, 0 if not used 5 minute min */
-   long min5m_value;      /* min float*MeterMultiplier if valid */
+   int mean6m_is_valid;   /* mandatory, 0 if not used 5 minute mean */
+   long mean6m_value;     /* mean float*MeterMultiplier if valid */
+   int max6m_is_valid;    /* mandatory, 0 if not used 5 minute max */
+   long max6m_value;      /* max float*MeterMultiplier if valid */
+   int min6m_is_valid;    /* mandatory, 0 if not used 5 minute min */
+   long min6m_value;      /* min float*MeterMultiplier if valid */
 };
 
 struct MeterTable_entry {
