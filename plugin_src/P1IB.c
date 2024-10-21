@@ -159,6 +159,7 @@ static void fill_obis_entry(unsigned int filter_pos,
 	 filter_data->mean[5] = calc_mean(6, d);
 	 ObisEntry->mean6m_value =
 	    multiplier * calc_mean(6, filter_data->mean);
+	 present_arrays("mean", array_json, d, filter_data->max);
       }
       if(ObisEntry->max6m_is_valid)
       {
@@ -167,7 +168,6 @@ static void fill_obis_entry(unsigned int filter_pos,
 	 filter_data->max[5] = calc_max(6, d);
 	 ObisEntry->max6m_value =
 	    multiplier * calc_max(6, filter_data->max);
-	 present_arrays("max", array_json, d, filter_data->max);
       }
       if(ObisEntry->min6m_is_valid)
       {
@@ -176,6 +176,7 @@ static void fill_obis_entry(unsigned int filter_pos,
 	 filter_data->min[5] = calc_min(6, d);
 	 ObisEntry->min6m_value =
 	    multiplier * calc_min(6, filter_data->min);
+	 present_arrays("min", array_json, d, filter_data->max);
       }
    }
 } /* fill_obis_entry */
@@ -214,18 +215,14 @@ static void fill_obis_data(int64_t obis_count,
       {
 	 /* this will probably never happen, reset to a sane value */
 	 inst->last_obis_filter_update = obis_count - 3;
-	 fprintf(stderr, "This should not happen!\n");
       }
       else if((obis_count - inst->last_obis_filter_update) > 10)
       {
 	 /* we are late to the party, lets forget what we have missed */
 	 inst->last_obis_filter_update = obis_count - 10;
-	 fprintf(stderr, "Late to party!\n");
       }
       if((obis_count - inst->last_obis_filter_update) >= 6)
       {
-	 fprintf(stderr, "Time to update filters!\n");
-
 	 filter_pos = 10 - (obis_count - inst->last_obis_filter_update);
 	 for(i=0; i<entry->numObisEntries; i++)
 	 {
@@ -239,8 +236,6 @@ static void fill_obis_data(int64_t obis_count,
 	 }
 	 inst->last_obis_filter_update += 6;
       }
-      else
-	 fprintf(stderr, "No need to update, last: %ld, now %ld\n", inst->last_obis_filter_update, obis_count);
    }
 } /* fill_obis_data */
 
