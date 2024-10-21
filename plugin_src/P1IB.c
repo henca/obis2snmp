@@ -33,22 +33,101 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <json.h>
 #include <pthread.h>
 
+struct filtered
+{
+   /* values for each of the last 5 minutes */
+   double mean[5];
+   double max[5];
+   double min[5];
+};
+
 struct instance
 {
    struct MeterTable_entry *entry;
    CURL *curl;
+   int64_t last_obis_filter_update;
+   struct filtered *filter_data;
 };
 
-static void fill_obis_entry(int64_t obis_count,
+static double calc_mean(unsigned int num_vals, double *values)
+{
+   unsigned int u;
+   double ret=0.0;
+
+   for(u=0; u<num_vals; u++)
+      ret += values[u];
+   ret /= num_vals;
+   return ret;
+} /* calc_mean */
+
+static double calc_max(unsigned int num_vals, double *values)
+{
+   unsigned int u;
+   double ret= (num_vals ? values[0] : 0.0);
+
+   for(u=1; u<num_vals; u++)
+      if(values[u] > ret)
+	 ret = values[u];
+   return ret;
+} /* calc_max */
+
+static double calc_min(unsigned int num_vals, double *values)
+{
+   unsigned int u;
+   double ret= (num_vals ? values[0] : 0.0);
+
+   for(u=1; u<num_vals; u++)
+      if(values[u] < ret)
+	 ret = values[u];
+   return ret;
+} /* calc_min */
+
+static void fill_obis_entry(unsigned int filter_pos,
 			    struct json_object *array_json,
 			    long multiplier,
-			    struct obis_data *ObisEntry)
+			    struct obis_data *ObisEntry,
+			    struct filtered *filter_data)
 {
+   double d[6];
+   int i;
+
    if(ObisEntry->latest_is_valid)
    {
       ObisEntry->latest_value =
 	 multiplier *
 	 json_object_get_double(json_object_array_get_idx(array_json, 9));
+   }
+   if(filter_pos &&
+      (ObisEntry->mean5m_is_valid || ObisEntry->max5m_is_valid ||
+       ObisEntry->min5m_is_valid))
+   {
+      for(i=0; i<6; i++)
+	 d[i] = json_object_get_double(json_object_array_get_idx(array_json,
+					  i+filter_pos));
+      if(ObisEntry->mean5m_is_valid)
+      {
+	 memmove(&(filter_data->mean[0]), &(filter_data->mean[1]),
+		 4*sizeof(double));
+	 filter_data->mean[4] = calc_mean(6, d);
+	 ObisEntry->mean5m_value =
+	    multiplier * calc_mean(5, filter_data->mean);
+      }
+      if(ObisEntry->max5m_is_valid)
+      {
+	 memmove(&(filter_data->max[0]), &(filter_data->max[1]),
+		 4*sizeof(double));
+	 filter_data->max[4] = calc_max(6, d);
+	 ObisEntry->max5m_value =
+	    multiplier * calc_max(5, filter_data->max);
+      }
+      if(ObisEntry->min5m_is_valid)
+      {
+	 memmove(&(filter_data->min[0]), &(filter_data->min[1]),
+		 4*sizeof(double));
+	 filter_data->min[4] = calc_min(6, d);
+	 ObisEntry->min5m_value =
+	    multiplier * calc_min(5, filter_data->min);
+      }
    }
 } /* fill_obis_entry */
 
@@ -56,6 +135,8 @@ static void fill_obis_data(int64_t obis_count,
 			   struct instance *inst,
 			   struct json_object *meter_json)
 {
+   int64_t filter_pos=0;
+
    if(inst && meter_json)
    {
       struct json_object *tmp_json;
@@ -72,8 +153,8 @@ static void fill_obis_data(int64_t obis_count,
 	 tmp_json = json_object_object_get(d_json,
 					   entry->ObisEntries[i].obis_string);
 	 if(tmp_json)
-	    fill_obis_entry(obis_count, tmp_json, multiplier,
-			    &(entry->ObisEntries[i]));
+	    fill_obis_entry(filter_pos, tmp_json, multiplier,
+			    &(entry->ObisEntries[i]), inst->filter_data);
       }
    }
 } /* fill_obis_data */
@@ -203,11 +284,14 @@ void *init_driver(struct MeterTable_entry *entry,
    entry->MeterMAC[0]=0;
    entry->MeterMAC_len=0;
    entry->numObisEntries = sizeof(driver_obis)/sizeof(struct obis_data);
-   entry->ObisEntries = malloc(sizeof(driver_obis)*sizeof(struct obis_data));
+   entry->ObisEntries = malloc(sizeof(driver_obis));
    if(!entry->ObisEntries)
       entry->numObisEntries = 0;
    else
       memcpy(entry->ObisEntries, driver_obis, sizeof(driver_obis));
+   out->filter_data = calloc(entry->numObisEntries, sizeof(struct filtered));
+   if(!out->filter_data)
+       entry->numObisEntries = 0;
    if(entry->MeterIP_len)
    {
       char url[256];
@@ -218,15 +302,6 @@ void *init_driver(struct MeterTable_entry *entry,
       curl_easy_setopt(out->curl, CURLOPT_WRITEDATA, (void *)out);
       curl_easy_perform(out->curl);
    }
-#if 0
-   out->cont=1;
-   if(pthread_create(&(out->work_thread), NULL, work_task, out))
-   {
-      fprintf(stderr, "pthread_create failed!\n");
-   }
-#endif
-   /* fprintf(stderr ,"End of init, index %ld listening below oid ", MeterIndex); 
-      present_oid(MeterTableEntry_oid, OID_LENGTH(MeterTableEntry_oid)); */
    return out;
 } /* init_driver */
 
@@ -254,6 +329,7 @@ void remove_driver(void *driver, struct MeterTable_entry *entry)
    i->curl = NULL;
    if(entry->numObisEntries)
    {
+      free(i->filter_data);
       free(entry->ObisEntries);
       entry->ObisEntries = NULL;
       entry->numObisEntries = 0;
