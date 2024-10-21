@@ -159,7 +159,7 @@ static void fill_obis_entry(unsigned int filter_pos,
 	 filter_data->mean[5] = calc_mean(6, d);
 	 ObisEntry->mean6m_value =
 	    multiplier * calc_mean(6, filter_data->mean);
-	 present_arrays("mean", array_json, d, filter_data->max);
+	 present_arrays("mean", array_json, d, filter_data->mean);
       }
       if(ObisEntry->max6m_is_valid)
       {
@@ -176,7 +176,7 @@ static void fill_obis_entry(unsigned int filter_pos,
 	 filter_data->min[5] = calc_min(6, d);
 	 ObisEntry->min6m_value =
 	    multiplier * calc_min(6, filter_data->min);
-	 present_arrays("min", array_json, d, filter_data->max);
+	 present_arrays("min", array_json, d, filter_data->min);
       }
    }
 } /* fill_obis_entry */
