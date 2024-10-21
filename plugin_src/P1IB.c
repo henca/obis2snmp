@@ -82,6 +82,27 @@ static double calc_min(unsigned int num_vals, double *values)
    return ret;
 } /* calc_min */
 
+static void present_arrays(const char *descr,
+			   struct json_object *array_json,
+			   double latest[6],
+			   double filtered[6])
+{
+   int i;
+   
+   fprintf(stderr, "%s\n", descr);
+   fprintf(stderr, "json: ");
+   for(i=0; i<10; i++)
+      fprintf(
+	 stderr, "%7.3f ",
+	 json_object_get_double(json_object_array_get_idx(array_json, i)));
+   fprintf(stderr, "\n latest: ");
+   for(i=0; i<6; i++)
+      fprintf(stderr, "%7.3f ", latest[i]);
+   fprintf(stderr, "\n filtered: ");
+   for(i=0; i<6; i++)
+      fprintf(stderr, "%7.3f ", filtered[i]);   
+}
+
 static void init_obis_filter(struct json_object *array_json,
 			     struct obis_data *ObisEntry,
 			     struct filtered *filter_data)
@@ -145,6 +166,7 @@ static void fill_obis_entry(unsigned int filter_pos,
 	 filter_data->max[5] = calc_max(6, d);
 	 ObisEntry->max6m_value =
 	    multiplier * calc_max(6, filter_data->max);
+	 present_arrays("max", array_json, d, filter_data->max);
       }
       if(ObisEntry->min6m_is_valid)
       {
@@ -295,6 +317,9 @@ void *init_driver(struct MeterTable_entry *entry,
       {{1,0,1,8,0}, "1-0:1.8.0",
        "Total active energy consumed from grid", 0, "kWh", 0,
        1, 0, 0, 0, 0, 0, 0, 0},
+      {{1,0,32,7,0}, "1-0:32.7.0",
+       "nstantaneous voltage (U) in phase L1", 0, "V", 0,
+       1, 0, 1, 0, 1, 0, 1, 0},
    };
    struct instance *out = malloc(sizeof(struct instance));
 
