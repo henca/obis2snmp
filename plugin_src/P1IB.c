@@ -214,14 +214,18 @@ static void fill_obis_data(int64_t obis_count,
       {
 	 /* this will probably never happen, reset to a sane value */
 	 inst->last_obis_filter_update = obis_count - 3;
+	 fprintf(stderr, "This should not happen!\n");
       }
       else if((obis_count - inst->last_obis_filter_update) > 10)
       {
 	 /* we are late to the party, lets forget what we have missed */
 	 inst->last_obis_filter_update = obis_count - 10;
+	 fprintf(stderr, "Late to party!\n");
       }
       if((obis_count - inst->last_obis_filter_update) >= 6)
       {
+	 fprintf(stderr, "Time to update filters!\n");
+
 	 filter_pos = 10 - (obis_count - inst->last_obis_filter_update);
 	 for(i=0; i<entry->numObisEntries; i++)
 	 {
@@ -233,7 +237,10 @@ static void fill_obis_data(int64_t obis_count,
 			       &(entry->ObisEntries[i]),
 			       &(inst->filter_data[i]));
 	 }
+	 inst->last_obis_filter_update += 6;
       }
+      else
+	 fprintf(stderr, "No need to update, last: %ld, now %ld\n", inst->last_obis_filter_update, obis_count);
    }
 } /* fill_obis_data */
 
@@ -319,7 +326,7 @@ void *init_driver(struct MeterTable_entry *entry,
        "Total active energy consumed from grid", 0, "kWh", 0,
        1, 0, 0, 0, 0, 0, 0, 0},
       {{1,0,32,7,0}, "1-0:32.7.0",
-       "nstantaneous voltage (U) in phase L1", 0, "V", 0,
+       "Instantaneous voltage (U) in phase L1", 0, "V", 0,
        1, 0, 1, 0, 1, 0, 1, 0},
    };
    struct instance *out = malloc(sizeof(struct instance));
