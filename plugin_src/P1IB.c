@@ -416,7 +416,7 @@ void *init_driver(struct MeterTable_entry *entry,
    }
    else
    {
-      entry->MeterMultiplier=1;
+      entry->MeterMultiplier=1000;
    }
    /* initialize other parts of entry */
    entry->MeterMAC[0]=0;
