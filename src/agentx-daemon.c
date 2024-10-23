@@ -264,17 +264,21 @@ main (int argc, char **argv) {
 
   if(!conf_obj) {
      snmp_log(LOG_CRIT,"Failed reading %s as json\n", conffile);
+     fprintf(stderr,"Failed reading %s as json\n", conffile);
      exit(EXIT_FAILURE);
   }
   meter_array = json_object_object_get(conf_obj, "meters");
   if(!meter_array) {
      snmp_log(LOG_CRIT,"File %s does not have any meter array!\n", conffile);
+     fprintf(stderr,"File %s does not have any meter array!\n", conffile);
      exit(EXIT_FAILURE);
   }
   num_meters = json_object_array_length(meter_array);
   MaxRegisteredEntry = num_meters;
   if(num_meters < 1) {
      snmp_log(LOG_CRIT,"File %s does not have any meters in array!\n",
+	      conffile);
+     fprintf(stderr,"File %s does not have any meters in array!\n",
 	      conffile);
      exit(EXIT_FAILURE);
   }
