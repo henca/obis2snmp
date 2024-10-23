@@ -89,7 +89,8 @@ PageTop[$target_name]: <h1>$metername $descr</h1>
   </TABLE>
 Title[$target_name]: $metername $descr
 SetEnv[$target_name]: MRTG_INT_DESCR="$metername $descr"
-Options[$target_name]: nomax, nototal, gauge, $noo growright
+MaxBytes[$target_name]: 100000000
+Options[$target_name]: gauge, $noo growright
 YLegend[$target_name]: $unit
 kilo[$target_name]: 1000
 ShortLegend[$target_name]: $unit
