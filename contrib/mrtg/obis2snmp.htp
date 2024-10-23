@@ -1,0 +1,986 @@
+# Generic host template for all systems support MIB-II host resources
+# MIB.  Will take care of storage devices as well, but watch out for
+# changes in enumeration caused by inserting USB devices!
+
+# Watch out for lines being wrapped by broken editing software
+
+$head_lines .= "#---------------------------------------------------------------------\n";
+
+my (@meter) = snmpwalk($router_connect,'1.3.6.1.4.1.62368.1.1.1');
+my( $metercnt ) = 0;
+foreach my $tmps (@meter) {
+  $tmps =~ /(\d+):(\d+)/;
+  next if(!$2);
+  my($instance,$dummy)=($1,$2);
+  my($metername) =
+  snmpget($router_connect,'1.3.6.1.4.1.62368.1.1.2.'.$instance);
+  my($meterip) =
+  snmpget($router_connect,'1.3.6.1.4.1.62368.1.1.3.'.$instance);
+  my($metermac) =
+  snmpget($router_connect,'1.3.6.1.4.1.62368.1.1.4.'.$instance);
+  my($metermmultiplier) =
+  snmpget($router_connect,'1.3.6.1.4.1.62368.1.1.6.'.$instance);
+  my($shortmeter) = $instance;
+  $shortmeter = $1 if($metername =~ /^(\w):/);
+  my($target_name)=$router_name.".meterrssi.".$shortmeter;
+  $metercnt += 1;
+$target_lines .= <<ECHO;
+#######################################
+# WiFi RSSI $metername
+Target[$target_name]: 1.3.6.1.4.1.62368.1.1.5.$instance&1.3.6.1.4.1.62368.1.1.5.$instance:$router_connect + 100
+Factor[$target_name]: 1
+YTicsFactor[$target_name]: 1
+PageTop[$target_name]: <h1>$metername WiFi RSSI</h1>
+  <TABLE>
+    <TR><TD>Type:</TD><TD>$metername</TD></TR>
+    <TR><TD>IP:</TD><TD>$meterip</TD></TR>
+    <TR><TD>MAC:</TD><TD>$metermac</TD></TR>
+  </TABLE>
+Title[$target_name]: $metername WiFi RSSI
+SetEnv[$target_name]: MRTG_INT_DESCR="$metername"
+MaxBytes[$target_name]: 100
+Options[$target_name]: nopercent, gauge, noo, growright
+YLegend[$target_name]: RSSI+100
+kilo[$target_name]: 1000
+ShortLegend[$target_name]: RSSI
+LegendI[$target_name]: RSSI
+Legend1[$target_name]: RSSI
+Legend3[$target_name]: RSSI
+routers.cgi*Options[$target_name]: nomax, nototal, fixunit, noo
+routers.cgi*Mode[$target_name]: general
+routers.cgi*ShortDesc[$target_name]: RSSI: $metername
+routers.cgi*Description[$target_name]: WiFi RSSI on $metername
+routers.cgi*InOut[$target_name]: no
+routers.cgi*InMenu[$target_name]: yes
+routers.cgi*InSummary[$target_name]: yes
+routers.cgi*InCompact[$target_name]: yes
+routers.cgi*Icon[$target_name]: chip-sm.gif
+routers.cgi*Graph[$target_name]: $metername "RSSI" noo
+ECHO
+}
+#if($latestcnt) {
+#$target_lines .= <<ECHO;
+#routers.cgi*Options[$router_name-sensortemps]: available
+#routers.cgi*Icon[$router_name-sensortemps]: chip-sm.gif
+#routers.cgi*ShortDesc[$router_name-sensortemps]: Temperatures
+#routers.cgi*Title[$router_name-sensortemps]: Temperatures on $router_name
+#ECHO
+#}
+
+$target_lines .= <<ECHO;
+routers.cgi*Description: $router_name ($sysname)
+routers.cgi*ShortDesc: $sysname
+#-------------------------------------------------
+ECHO
+
+my($cpuoid) = oid_pick($router_connect,$v3opt,"1.3.6.1.4.1.2021.11.11.0",
+  "1.3.6.1.4.1.9.2.1.58.0");
+if($cpuoid) { # this uses the UCD MIB or Cisco MIB
+$target_lines .= <<ECHO;
+#######################################
+# CPU load
+Target[$router_name-cpu]: 100 - $cpuoid&$cpuoid:$router_connect
+PageTop[$router_name-cpu]: <h1>$router_name CPU usage</h1>
+Title[$router_name-cpu]: CPU on $router_name
+Maxbytes[$router_name-cpu]: 100
+Options[$router_name-cpu]: gauge, noo, growright
+YLegend[$router_name-cpu]: percent
+ShortLegend[$router_name-cpu]: %
+LegendI[$router_name-cpu]: cpu:
+Legend1[$router_name-cpu]: CPU usage
+Legend3[$router_name-cpu]: Peak CPU usage
+routers.cgi*Options[$router_name-cpu]: noo, nopercent, nototal, fixunit
+routers.cgi*InOut[$router_name-cpu]: no
+routers.cgi*ShortDesc[$router_name-cpu]:CPU
+routers.cgi*Icon[$router_name-cpu]: chip-sm.gif
+routers.cgi*InSummary[$router_name-cpu]: yes
+routers.cgi*InCompact[$router_name-cpu]: yes
+routers.cgi*Mode[$router_name-cpu]: cpu
+routers.cgi*MBLegend[$router_name-cpu]: 100% usage
+ECHO
+} else { # lets try hrMIB
+  my (@cpus) = snmpwalk($router_connect,'1.3.6.1.2.1.25.3.3.1.2');
+  foreach my $tmpcpu (@cpus) {
+    $tmpcpu =~ /(\d+):\d/;
+    my( $instance )=$1;
+    my( $target_name )=$router_name.".cpu".$instance;
+    $target_lines .= <<ECHO;
+Target[$target_name]: 1.3.6.1.2.1.25.3.3.1.2.$instance&1.3.6.1.2.1.25.3.3.1.2.$instance:$router_connect
+Title[$target_name]: $sysname processor $instance
+MaxBytes[$target_name]: 100
+Options[$target_name]:  gauge, unknaszero, noo, growright
+Directory[$target_name]: $directory_name
+WithPeak[$target_name]: wmy
+YLegend[$target_name]: % Utilisation
+ShortLegend[$target_name]: %
+Legend1[$target_name]: 1min CPU load on proc$instance
+Legend3[$target_name]: Max 5min CPU load on proc$instance
+LegendI[$target_name]: cpu$instance:
+PageTop[$target_name]: <H1>$sysname Processor Load</H1>
+routers.cgi*ShortDesc[$target_name]:  CPU #$instance
+routers.cgi*Options[$target_name]: nopercent, nototal, fixunit
+routers.cgi*InOut[$target_name]: no
+routers.cgi*Icon[$target_name]: chip-sm.gif
+routers.cgi*InSummary[$target_name]: yes
+routers.cgi*InCompact[$target_name]: yes
+routers.cgi*Mode[$target_name]: cpu
+routers.cgi*MBLegend[$target_name]: 100% usage
+ECHO
+    if($#cpus > 0) {
+                $target_lines .= "routers.cgi*Graph[$target_name]: $router_name-allcpu average\n";
+                $target_lines .= "routers.cgi*InMenu[$target_name]: no\n";
+        }
+  }
+  if($#cpus > 0) {
+        $target_lines .= <<ECHO;
+routers.cgi*Title[$router_name-allcpu]: All CPUs on $router_name
+routers.cgi*Icon[$router_name-allcpu]: chip-sm.gif
+routers.cgi*ShortDesc[$router_name-allcpu]: CPU
+routers.cgi*LegendAI[$router_name-allcpu]: cpu :
+ECHO
+  }
+}
+
+my($rmemoid) = oid_pick($router_connect,$v3opt,"1.3.6.1.4.1.2021.4.6.0");
+my($smemoid) = oid_pick($router_connect,$v3opt,"1.3.6.1.4.1.2021.4.4.0");
+if($rmemoid and $smemoid) { # this uses the UCD MIB
+my($maxreal, $maxswap) = snmpget($router_connect,
+        "1.3.6.1.4.1.2021.4.5.0","1.3.6.1.4.1.2021.4.3.0");
+$maxreal = 1024*$maxreal;
+$maxswap = 1024*$maxswap;
+$target_lines .= <<ECHO;
+#######################################
+# Memory used
+Target[$router_name-memory]: $rmemoid&$smemoid:$router_connect * 1024
+PageTop[$router_name-memory]: <h1>$router_name Memory Available</h1>
+Title[$router_name-memory]: Available Memory on $router_name
+SetEnv[$router_name-memory]: MRTG_INT_DESCR="Memory"
+MaxBytes1[$router_name-memory]: $maxreal
+MaxBytes2[$router_name-memory]: $maxswap
+Unscaled[$router_name-memory]: ymwd
+Options[$router_name-memory]: gauge, growright
+YLegend[$router_name-memory]: Bytes
+kilo[$router_name-memory]: 1024
+ShortLegend[$router_name-memory]: B
+LegendI[$router_name-memory]: real:
+LegendO[$router_name-memory]: swap:
+Legend1[$router_name-memory]: Available real memory
+Legend2[$router_name-memory]: Available swap space
+Legend3[$router_name-memory]: Peak available real
+Legend4[$router_name-memory]: Peak available swap
+routers.cgi*Options[$router_name-memory]: nototal
+routers.cgi*Mode[$router_name-memory]: memory
+routers.cgi*ShortDesc[$router_name-memory]: Memory
+routers.cgi*Description[$router_name-memory]: Memory available: $router_name
+routers.cgi*InOut[$router_name-memory]: no
+routers.cgi*InSummary[$router_name-memory]: yes
+routers.cgi*InCompact[$router_name-memory]: yes
+routers.cgi*Icon[$router_name-memory]: chip-sm.gif
+routers.cgi*MBLegend[$router_name-memory]: 100% usage
+ECHO
+}
+
+my (@sensor) = snmpwalk($router_connect,'1.3.6.1.4.1.2021.13.16.2.1.1');
+my( $sensorcnt ) = 0;
+foreach my $tmps (@sensor) {
+  $tmps =~ /(\d+):(\d+)/;
+  next if(!$2);
+  my($instance,$dummy)=($1,$2);
+  my($sensorname) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.16.2.1.2.'.$instance);
+  my($shortsensor) = $instance;
+  $shortsensor = $1 if($sensorname =~ /^(\w):/);
+  my($target_name)=$router_name.".sensortemp.".$shortsensor;
+  $sensorcnt += 1;
+$target_lines .= <<ECHO;
+#######################################
+# Temperature $sensorname
+Target[$target_name]: 1.3.6.1.4.1.2021.13.16.2.1.3.$instance&1.3.6.1.4.1.2021.13.16.2.1.3.$instance:$router_connect
+Factor[$target_name]: 0.001
+YTicsFactor[$target_name]: 0.001
+PageTop[$target_name]: <h1>$router_name Temperature ($sensorname)</h1>
+Title[$target_name]: $router_name Temperatuere ($sensorname)
+SetEnv[$target_name]: MRTG_INT_DESCR="$sensorname"
+MaxBytes[$target_name]: 900000
+Options[$target_name]: nopercent, gauge, noo, growright
+YLegend[$target_name]: °Celsius
+kilo[$target_name]: 1024
+ShortLegend[$target_name]: &deg;C
+LegendI[$target_name]: temp
+Legend1[$target_name]: temp
+Legend3[$target_name]: temp
+routers.cgi*Options[$target_name]: nomax, nototal, fixunit, noo
+routers.cgi*Mode[$target_name]: general
+routers.cgi*ShortDesc[$target_name]: Temp: $sensorname
+routers.cgi*Description[$target_name]: $router_name temperature on $sensorname
+routers.cgi*InOut[$target_name]: no
+routers.cgi*InMenu[$target_name]: yes
+routers.cgi*InSummary[$target_name]: yes
+routers.cgi*InCompact[$target_name]: yes
+routers.cgi*Icon[$target_name]: chip-sm.gif
+routers.cgi*Graph[$target_name]: $router_name-sensortemps "Temperature" noo
+ECHO
+}
+if($sensorcnt) {
+$target_lines .= <<ECHO;
+routers.cgi*Options[$router_name-sensortemps]: available
+routers.cgi*Icon[$router_name-sensortemps]: chip-sm.gif
+routers.cgi*ShortDesc[$router_name-sensortemps]: Temperatures
+routers.cgi*Title[$router_name-sensortemps]: Temperatures on $router_name
+ECHO
+}
+
+my (@sensorf) = snmpwalk($router_connect,'1.3.6.1.4.1.2021.13.16.3.1.1');
+my( $sensorfcnt ) = 0;
+foreach my $tmps (@sensorf) {
+  $tmps =~ /(\d+):(\d+)/;
+  next if(!$2);
+  my($instance,$dummy)=($1,$2);
+  my($sensorname) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.16.3.1.2.'.$instance);
+  my($shortsensor) = $instance;
+  $shortsensor = $1 if($sensorname =~ /^(\w):/);
+  my($target_name)=$router_name.".sensorfan.".$shortsensor;
+  $sensorfcnt += 1;
+$target_lines .= <<ECHO;
+#######################################
+# Fan $sensorname
+Target[$target_name]: 1.3.6.1.4.1.2021.13.16.3.1.3.$instance&1.3.6.1.4.1.2021.13.16.3.1.3.$instance:$router_connect
+PageTop[$target_name]: <h1>$router_name Fan ($sensorname)</h1>
+Title[$target_name]: $router_name Fan ($sensorname)
+SetEnv[$target_name]: MRTG_INT_DESCR="$sensorname"
+MaxBytes[$target_name]: 900000
+Options[$target_name]: nopercent, gauge, noo, growright
+YLegend[$target_name]: rpm
+kilo[$target_name]: 1000
+ShortLegend[$target_name]: rpm
+LegendI[$target_name]: rpm
+Legend1[$target_name]: rpm
+Legend3[$target_name]: rpm
+routers.cgi*Options[$target_name]: nomax, nototal, fixunit, noo
+routers.cgi*Mode[$target_name]: general
+routers.cgi*ShortDesc[$target_name]: rpm: $sensorname
+routers.cgi*Description[$target_name]: $router_name fan speed on $sensorname
+routers.cgi*InOut[$target_name]: no
+routers.cgi*InMenu[$target_name]: yes
+routers.cgi*InSummary[$target_name]: yes
+routers.cgi*InCompact[$target_name]: yes
+routers.cgi*Icon[$target_name]: chip-sm.gif
+routers.cgi*Graph[$target_name]: $router_name-sensorfans "Fan" noo
+ECHO
+}
+if($sensorfcnt) {
+$target_lines .= <<ECHO;
+routers.cgi*Options[$router_name-sensorfans]: available
+routers.cgi*Icon[$router_name-sensorfans]: chip-sm.gif
+routers.cgi*ShortDesc[$router_name-sensorfans]: Fan speed
+routers.cgi*Title[$router_name-sensortemps]: Fan speed on $router_name
+ECHO
+}
+
+my (@sensorv) = snmpwalk($router_connect,'1.3.6.1.4.1.2021.13.16.4.1.1');
+my( $sensorvcnt ) = 0;
+foreach my $tmps (@sensorv) {
+  $tmps =~ /(\d+):(\d+)/;
+  next if(!$2);
+  my($instance,$dummy)=($1,$2);
+  my($sensorname) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.16.4.1.2.'.$instance);
+  my($shortsensor) = $instance;
+  $shortsensor = $1 if($sensorname =~ /^(\w):/);
+  my($target_name)=$router_name.".sensorvolt.".$shortsensor;
+  $sensorvcnt += 1;
+$target_lines .= <<ECHO;
+#######################################
+# Voltage $sensorname
+Target[$target_name]: 1.3.6.1.4.1.2021.13.16.4.1.3.$instance&1.3.6.1.4.1.2021.13.16.4.1.3.$instance:$router_connect
+Factor[$target_name]: 0.001
+YTicsFactor[$target_name]: 0.001
+PageTop[$target_name]: <h1>$router_name Voltage ($sensorname)</h1>
+Title[$target_name]: $router_name Volteratuere ($sensorname)
+SetEnv[$target_name]: MRTG_INT_DESCR="$sensorname"
+MaxBytes[$target_name]: 900000
+Options[$target_name]: nopercent, gauge, noo, growright
+YLegend[$target_name]: Volt
+kilo[$target_name]: 1000
+ShortLegend[$target_name]: V
+LegendI[$target_name]: volt
+Legend1[$target_name]: volt1
+Legend3[$target_name]: volt3
+routers.cgi*Options[$target_name]: nomax, nototal, fixunit, noo
+routers.cgi*Mode[$target_name]: general
+routers.cgi*ShortDesc[$target_name]: Volt: $sensorname
+routers.cgi*Description[$target_name]: $router_name voltage on $sensorname
+routers.cgi*InOut[$target_name]: no
+routers.cgi*InMenu[$target_name]: yes
+routers.cgi*InSummary[$target_name]: yes
+routers.cgi*InCompact[$target_name]: yes
+routers.cgi*Icon[$target_name]: chip-sm.gif
+routers.cgi*Graph[$target_name]: $router_name-sensorvolts "Voltage" noo
+ECHO
+}
+if($sensorvcnt) {
+$target_lines .= <<ECHO;
+routers.cgi*Options[$router_name-sensorvolts]: available
+routers.cgi*Icon[$router_name-sensorvolts]: chip-sm.gif
+routers.cgi*ShortDesc[$router_name-sensorvolts]: Voltages
+routers.cgi*Title[$router_name-sensorvolts]: Voltages on $router_name
+ECHO
+}
+
+my (@gpuusage) = snmpwalk($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.29');
+my( $gpuusagecnt ) = 0;
+foreach my $tmps (@gpuusage) {
+  $tmps =~ /(\d+):(\d+)/;
+  next if(!defined($2));
+  my($instance,$dummy)=($1,$2);
+  my($gpuname) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.2.'.$instance);
+  my($gpuuuid) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.26.'.$instance);
+  my($gpumem) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.8.'.$instance);
+  my($gpubiosver) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.3.'.$instance);
+  my($gpudriverver) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.4.'.$instance);
+  my($shortsensor) = $instance;
+  $shortsensor = $1 if($gpuname =~ /^(\w):/);
+  my($target_name)=$router_name.".gpuusage.".$shortsensor;
+  $gpuusagecnt += 1;
+$target_lines .= <<ECHO;
+#######################################
+# Usage $gpuname
+Target[$target_name]: 1.3.6.1.4.1.2021.13.42.2.1.29.$instance&1.3.6.1.4.1.2021.13.42.2.1.28.$instance:$router_connect
+Factor[$target_name]: 1.0
+YTicsFactor[$target_name]: 1.0
+Title[$target_name]: $router_name GPU $shortsensor usage ($gpuname)
+SetEnv[$target_name]: MRTG_INT_DESCR="$gpuname"
+MaxBytes[$target_name]: 100
+Options[$target_name]: gauge, nopercent, growright
+YLegend[$target_name]: Percent
+kilo[$target_name]: 1024
+ShortLegend[$target_name]: %
+LegendI[$target_name]: GPU usage (%)
+LegendO[$target_name]: Fan speed (%)
+Legend1[$target_name]: GPU usage (%)
+Legend2[$target_name]: Fan speed (%)
+Legend3[$target_name]: GPU usage (%)
+Legend4[$target_name]: Fan speed (%)
+PageTop[$target_name]: <h1>$router_name GPU $shortsensor usage ($gpuname)</h1>
+  <TABLE>
+    <TR><TD>Type:</TD><TD>$gpuname</TD></TR>
+    <TR><TD>Memory:</TD><TD>$gpumem MiB</TD></TR>
+    <TR><TD>BIOS version:</TD><TD>$gpubiosver</TD></TR>
+    <TR><TD>Driver version:</TD><TD>$gpudriverver</TD></TR>
+    <TR><TD>UUID:</TD><TD>$gpuuuid</TD></TR>
+  </TABLE>
+routers.cgi*Options[$target_name]: nototal, fixunit
+routers.cgi*Mode[$target_name]: general
+routers.cgi*ShortDesc[$target_name]: Usage: $gpuname
+routers.cgi*Description[$target_name]: $router_name usage on $gpuname
+routers.cgi*InOut[$target_name]: no
+routers.cgi*InMenu[$target_name]: yes
+routers.cgi*InSummary[$target_name]: yes
+routers.cgi*InCompact[$target_name]: yes
+routers.cgi*Icon[$target_name]: chip-sm.gif
+routers.cgi*Graph[$target_name]: $router_name-gpuusages "Usage"
+ECHO
+}
+if($gpuusagecnt) {
+$target_lines .= <<ECHO;
+routers.cgi*Options[$router_name-gpuusages]: available
+routers.cgi*Icon[$router_name-gpuusages]: chip-sm.gif
+routers.cgi*ShortDesc[$router_name-gpuusages]: Usages
+routers.cgi*Title[$router_name-gpuusages]: Usages on $router_name
+ECHO
+}
+
+my (@gpuram) = snmpwalk($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.30');
+my( $gpuramcnt ) = 0;
+foreach my $tmps (@gpuram) {
+  $tmps =~ /(\d+):(\d+)/;
+  next if(!defined($2));
+  my($instance,$dummy)=($1,$2);
+  my($gpuname) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.2.'.$instance);
+  my($gpuuuid) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.26.'.$instance);
+  my($gpumem) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.8.'.$instance);
+  my($gpubiosver) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.3.'.$instance);
+  my($gpudriverver) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.4.'.$instance);
+  my($shortsensor) = $instance;
+  $shortsensor = $1 if($gpuname =~ /^(\w):/);
+  my($target_name)=$router_name.".gpuram.".$shortsensor;
+  $gpuramcnt += 1;
+$target_lines .= <<ECHO;
+#######################################
+# Video RAM $gpuname
+Target[$target_name]: 1.3.6.1.4.1.2021.13.42.2.1.30.$instance&1.3.6.1.4.1.2021.13.42.2.1.8.$instance:$router_connect
+Factor[$target_name]: 1.0
+YTicsFactor[$target_name]: 1.0
+Title[$target_name]: $router_name GPU $shortsensor ram speed ($gpuname)
+SetEnv[$target_name]: MRTG_INT_DESCR="$gpuname"
+MaxBytes[$target_name]: 900000
+Options[$target_name]: gauge, nopercent, growright
+YLegend[$target_name]: Bytes
+kMG[$target_name]: Mi,Gi,Ti,Pi
+kilo[$target_name]: 1024
+ShortLegend[$target_name]: B
+LegendI[$target_name]: Used GPU RAM
+LegendO[$target_name]: Total GPU RAM
+Legend1[$target_name]: Used GPU RAM
+Legend2[$target_name]: Total GPU RAM
+Legend3[$target_name]: Used GPU RAM
+Legend4[$target_name]: Total GPU RAM
+PageTop[$target_name]: <h1>$router_name GPU $shortsensor Video RAM ($gpuname)</h1>
+  <TABLE>
+    <TR><TD>Type:</TD><TD>$gpuname</TD></TR>
+    <TR><TD>Memory:</TD><TD>$gpumem MiB</TD></TR>
+    <TR><TD>BIOS version:</TD><TD>$gpubiosver</TD></TR>
+    <TR><TD>Driver version:</TD><TD>$gpudriverver</TD></TR>
+    <TR><TD>UUID:</TD><TD>$gpuuuid</TD></TR>
+  </TABLE>
+routers.cgi*Options[$target_name]: nototal, fixunit
+routers.cgi*Mode[$target_name]: general
+routers.cgi*ShortDesc[$target_name]: Video RAM: $gpuname
+routers.cgi*Description[$target_name]: $router_name video RAM on $gpuname
+routers.cgi*InOut[$target_name]: no
+routers.cgi*InMenu[$target_name]: yes
+routers.cgi*InSummary[$target_name]: yes
+routers.cgi*InCompact[$target_name]: yes
+routers.cgi*Icon[$target_name]: chip-sm.gif
+routers.cgi*Graph[$target_name]: $router_name-gpurams "Video RAM"
+ECHO
+}
+if($gpuramcnt) {
+$target_lines .= <<ECHO;
+routers.cgi*Options[$router_name-gpurams]: available
+routers.cgi*Icon[$router_name-gpurams]: chip-sm.gif
+routers.cgi*ShortDesc[$router_name-gpurams]: RAM
+routers.cgi*Title[$router_name-gpurams]: Video RAM on $router_name
+ECHO
+}
+
+my (@gputemp) = snmpwalk($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.10');
+my( $gputempcnt ) = 0;
+foreach my $tmps (@gputemp) {
+  $tmps =~ /(\d+):(\d+)/;
+  next if(!$2);
+  my($instance,$dummy)=($1,$2);
+  my($gpuname) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.2.'.$instance);
+  my($gpuuuid) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.26.'.$instance);
+  my($gpumem) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.8.'.$instance);
+  my($gpubiosver) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.3.'.$instance);
+  my($gpudriverver) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.4.'.$instance);
+  my($shortsensor) = $instance;
+  $shortsensor = $1 if($gpuname =~ /^(\w):/);
+  my($target_name)=$router_name.".gputemp.".$shortsensor;
+  $gputempcnt += 1;
+$target_lines .= <<ECHO;
+#######################################
+# Temperature $gpuname
+Target[$target_name]: 1.3.6.1.4.1.2021.13.42.2.1.10.$instance&1.3.6.1.4.1.2021.13.42.2.1.13.$instance:$router_connect
+Factor[$target_name]: 1.0
+YTicsFactor[$target_name]: 1.0
+Title[$target_name]: $router_name GPU $shortsensor temperature ($gpuname)
+SetEnv[$target_name]: MRTG_INT_DESCR="$gpuname"
+MaxBytes[$target_name]: 900000
+Options[$target_name]: nopercent, gauge, growright
+YLegend[$target_name]: °Celsius
+kilo[$target_name]: 1024
+ShortLegend[$target_name]: &deg;C
+LegendI[$target_name]: temp
+LegendO[$target_name]: max allowed temp
+Legend1[$target_name]: temp
+Legend2[$target_name]: max allowed temp
+Legend3[$target_name]: temp
+Legend4[$target_name]: max allowed temp
+PageTop[$target_name]: <h1>$router_name GPU $shortsensor temperature ($gpuname)</h1>
+  <TABLE>
+    <TR><TD>Type:</TD><TD>$gpuname</TD></TR>
+    <TR><TD>Memory:</TD><TD>$gpumem MiB</TD></TR>
+    <TR><TD>BIOS version:</TD><TD>$gpubiosver</TD></TR>
+    <TR><TD>Driver version:</TD><TD>$gpudriverver</TD></TR>
+    <TR><TD>UUID:</TD><TD>$gpuuuid</TD></TR>
+  </TABLE>
+routers.cgi*Options[$target_name]: nomax, nototal, fixunit
+routers.cgi*Mode[$target_name]: general
+routers.cgi*ShortDesc[$target_name]: Temp: $gpuname
+routers.cgi*Description[$target_name]: $router_name temperature on $gpuname
+routers.cgi*InOut[$target_name]: no
+routers.cgi*InMenu[$target_name]: yes
+routers.cgi*InSummary[$target_name]: yes
+routers.cgi*InCompact[$target_name]: yes
+routers.cgi*Icon[$target_name]: chip-sm.gif
+routers.cgi*Graph[$target_name]: $router_name-gputemps "Temperature"
+ECHO
+}
+if($gputempcnt) {
+$target_lines .= <<ECHO;
+routers.cgi*Options[$router_name-gputemps]: available
+routers.cgi*Icon[$router_name-gputemps]: chip-sm.gif
+routers.cgi*ShortDesc[$router_name-gputemps]: Temperatures
+routers.cgi*Title[$router_name-gputemps]: Temperatures on $router_name
+ECHO
+}
+
+my (@gpupower) = snmpwalk($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.31');
+my( $gpupowercnt ) = 0;
+foreach my $tmps (@gpupower) {
+  $tmps =~ /(\d+):(\d+)/;
+  next if(!defined($2));
+  my($instance,$dummy)=($1,$2);
+  my($gpuname) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.2.'.$instance);
+  my($gpuuuid) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.26.'.$instance);
+  my($gpumem) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.8.'.$instance);
+  my($gpubiosver) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.3.'.$instance);
+  my($gpudriverver) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.4.'.$instance);
+  my($shortsensor) = $instance;
+  $shortsensor = $1 if($gpuname =~ /^(\w):/);
+  my($target_name)=$router_name.".gpupower.".$shortsensor;
+  $gpupowercnt += 1;
+$target_lines .= <<ECHO;
+#######################################
+# Power $gpuname
+Target[$target_name]: 1.3.6.1.4.1.2021.13.42.2.1.31.$instance&1.3.6.1.4.1.2021.13.42.2.1.32.$instance:$router_connect
+Factor[$target_name]: 1.0
+YTicsFactor[$target_name]: 1.0
+Title[$target_name]: $router_name GPU $shortsensor power ($gpuname)
+SetEnv[$target_name]: MRTG_INT_DESCR="$gpuname"
+MaxBytes[$target_name]: 900000
+Options[$target_name]: nopercent, gauge, growright
+YLegend[$target_name]: Watt
+kilo[$target_name]: 1024
+ShortLegend[$target_name]: W
+LegendI[$target_name]: power usage
+LegendO[$target_name]: max allowed power
+Legend1[$target_name]: power
+Legend2[$target_name]: max allowed power
+Legend3[$target_name]: power
+Legend4[$target_name]: max allowed power
+PageTop[$target_name]: <h1>$router_name GPU $shortsensor power ($gpuname)</h1>
+  <TABLE>
+    <TR><TD>Type:</TD><TD>$gpuname</TD></TR>
+    <TR><TD>Memory:</TD><TD>$gpumem MiB</TD></TR>
+    <TR><TD>BIOS version:</TD><TD>$gpubiosver</TD></TR>
+    <TR><TD>Driver version:</TD><TD>$gpudriverver</TD></TR>
+    <TR><TD>UUID:</TD><TD>$gpuuuid</TD></TR>
+  </TABLE>
+routers.cgi*Options[$target_name]: nomax, nototal, fixunit
+routers.cgi*Mode[$target_name]: general
+routers.cgi*ShortDesc[$target_name]: Power: $gpuname
+routers.cgi*Description[$target_name]: $router_name power on $gpuname
+routers.cgi*InOut[$target_name]: no
+routers.cgi*InMenu[$target_name]: yes
+routers.cgi*InSummary[$target_name]: yes
+routers.cgi*InCompact[$target_name]: yes
+routers.cgi*Icon[$target_name]: chip-sm.gif
+routers.cgi*Graph[$target_name]: $router_name-gpupowers "Power"
+ECHO
+}
+if($gpupowercnt) {
+$target_lines .= <<ECHO;
+routers.cgi*Options[$router_name-gpupowers]: available
+routers.cgi*Icon[$router_name-gpupowers]: chip-sm.gif
+routers.cgi*ShortDesc[$router_name-gpupowers]: Powers
+routers.cgi*Title[$router_name-gpupowers]: Powers on $router_name
+ECHO
+}
+
+my (@gpustate) = snmpwalk($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.27');
+my( $gpustatecnt ) = 0;
+foreach my $tmps (@gpustate) {
+  $tmps =~ /(\d+):(\d+)/;
+  next if(!defined($2));
+  my($instance,$dummy)=($1,$2);
+  my($gpuname) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.2.'.$instance);
+  my($gpuuuid) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.26.'.$instance);
+  my($gpumem) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.8.'.$instance);
+  my($gpubiosver) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.3.'.$instance);
+  my($gpudriverver) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.4.'.$instance);
+  my($shortsensor) = $instance;
+  $shortsensor = $1 if($gpuname =~ /^(\w):/);
+  my($target_name)=$router_name.".gpustate.".$shortsensor;
+  $gpustatecnt += 1;
+$target_lines .= <<ECHO;
+#######################################
+# Power state $gpuname
+Target[$target_name]: 1.3.6.1.4.1.2021.13.42.2.1.27.$instance&1.3.6.1.4.1.2021.13.42.2.1.27.$instance:$router_connect
+Factor[$target_name]: 1.0
+YTicsFactor[$target_name]: 1.0
+Title[$target_name]: $router_name GPU $shortsensor power state ($gpuname)
+SetEnv[$target_name]: MRTG_INT_DESCR="$gpuname"
+MaxBytes[$target_name]: 900000
+Options[$target_name]: nopercent, gauge, noo, growright
+YLegend[$target_name]: #
+kilo[$target_name]: 1024
+ShortLegend[$target_name]: #
+LegendI[$target_name]: GPU power state
+Legend1[$target_name]: state
+Legend3[$target_name]: state
+PageTop[$target_name]: <h1>$router_name GPU $shortsensor power state ($gpuname)</h1>
+  <TABLE>
+    <TR><TD>Type:</TD><TD>$gpuname</TD></TR>
+    <TR><TD>Memory:</TD><TD>$gpumem MiB</TD></TR>
+    <TR><TD>BIOS version:</TD><TD>$gpubiosver</TD></TR>
+    <TR><TD>Driver version:</TD><TD>$gpudriverver</TD></TR>
+    <TR><TD>UUID:</TD><TD>$gpuuuid</TD></TR>
+  </TABLE>
+routers.cgi*Options[$target_name]: noo, nomax, nototal, fixunit
+routers.cgi*Mode[$target_name]: general
+routers.cgi*ShortDesc[$target_name]: Power state: $gpuname
+routers.cgi*Description[$target_name]: $router_name power state on $gpuname
+routers.cgi*InOut[$target_name]: no
+routers.cgi*InMenu[$target_name]: yes
+routers.cgi*InSummary[$target_name]: yes
+routers.cgi*InCompact[$target_name]: yes
+routers.cgi*Icon[$target_name]: chip-sm.gif
+routers.cgi*Graph[$target_name]: $router_name-gpustates "Power state"
+ECHO
+}
+if($gpustatecnt) {
+$target_lines .= <<ECHO;
+routers.cgi*Options[$router_name-gpustates]: available
+routers.cgi*Icon[$router_name-gpustates]: chip-sm.gif
+routers.cgi*ShortDesc[$router_name-gpustates]: Power state
+routers.cgi*Title[$router_name-gpustates]: Stateuencies on $router_name
+ECHO
+}
+
+my (@gpufreq) = snmpwalk($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.24');
+my( $gpufreqcnt ) = 0;
+foreach my $tmps (@gpufreq) {
+  $tmps =~ /(\d+):(\d+)/;
+  next if(!$2);
+  my($instance,$dummy)=($1,$2);
+  my($gpuname) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.2.'.$instance);
+  my($gpuuuid) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.26.'.$instance);
+  my($gpumem) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.8.'.$instance);
+  my($gpubiosver) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.3.'.$instance);
+  my($gpudriverver) =
+  snmpget($router_connect,'1.3.6.1.4.1.2021.13.42.2.1.4.'.$instance);
+  my($shortsensor) = $instance;
+  $shortsensor = $1 if($gpuname =~ /^(\w):/);
+  my($target_name)=$router_name.".gpufreq.".$shortsensor;
+  $gpufreqcnt += 1;
+$target_lines .= <<ECHO;
+#######################################
+# Freq $gpuname
+Target[$target_name]: 1.3.6.1.4.1.2021.13.42.2.1.24.$instance&1.3.6.1.4.1.2021.13.42.2.1.25.$instance:$router_connect
+Factor[$target_name]: 1.0
+YTicsFactor[$target_name]: 1.0
+Title[$target_name]: $router_name GPU $shortsensor frequencies ($gpuname)
+SetEnv[$target_name]: MRTG_INT_DESCR="$gpuname"
+MaxBytes[$target_name]: 900000
+Options[$target_name]: nopercent, gauge, growright
+YLegend[$target_name]: Hz
+kMG[$target_name]: M,G,T,P
+kilo[$target_name]: 1000
+ShortLegend[$target_name]: Hz
+LegendI[$target_name]: GPU frequency
+LegendO[$target_name]: Video RAM frequency
+Legend1[$target_name]: GPU frequency
+Legend2[$target_name]: Video RAM frequency
+Legend3[$target_name]: GPU frequency
+Legend4[$target_name]: Video RAM frequency
+PageTop[$target_name]: <h1>$router_name GPU $shortsensor frequencies ($gpuname)</h1>
+  <TABLE>
+    <TR><TD>Type:</TD><TD>$gpuname</TD></TR>
+    <TR><TD>Memory:</TD><TD>$gpumem MiB</TD></TR>
+    <TR><TD>BIOS version:</TD><TD>$gpubiosver</TD></TR>
+    <TR><TD>Driver version:</TD><TD>$gpudriverver</TD></TR>
+    <TR><TD>UUID:</TD><TD>$gpuuuid</TD></TR>
+  </TABLE>
+routers.cgi*Options[$target_name]: nomax, nototal, fixunit
+routers.cgi*Mode[$target_name]: general
+routers.cgi*ShortDesc[$target_name]: Frequency: $gpuname
+routers.cgi*Description[$target_name]: $router_name frequency on $gpuname
+routers.cgi*InOut[$target_name]: no
+routers.cgi*InMenu[$target_name]: yes
+routers.cgi*InSummary[$target_name]: yes
+routers.cgi*InCompact[$target_name]: yes
+routers.cgi*Icon[$target_name]: chip-sm.gif
+routers.cgi*Graph[$target_name]: $router_name-gpufreqs "Frequency"
+ECHO
+}
+if($gpufreqcnt) {
+$target_lines .= <<ECHO;
+routers.cgi*Options[$router_name-gpufreqs]: available
+routers.cgi*Icon[$router_name-gpufreqs]: chip-sm.gif
+routers.cgi*ShortDesc[$router_name-gpufreqs]: Frequencies
+routers.cgi*Title[$router_name-gpufreqs]: Frequencies on $router_name
+ECHO
+}
+
+my (@storage) = snmpwalk($router_connect,'1.3.6.1.2.1.25.2.3.1.4');
+my( $fscnt ) = 0;
+foreach my $tmps (@storage) {
+  $tmps =~ /(\d+):(\d+)/;
+  next if(!$2);
+  my($instance,$blocksize)=($1,$2);
+  my($diskname,$disksize,$disktype) =
+  snmpget($router_connect,'1.3.6.1.2.1.25.2.3.1.3.'.$instance,
+   '1.3.6.1.2.1.25.2.3.1.5.'.$instance, '1.3.6.1.2.1.25.2.3.1.2.'.$instance);
+  $disktype = $1 if($disktype =~ /\.(\d+)$/);
+  next if(!$diskname or !$disksize
+    or ($disktype!=2 and $disktype!=3 and $disktype!=4));
+  my($shortdisk) = $instance;
+  $shortdisk = $1 if($diskname =~ /^(\w):/);
+  my($target_name)=$router_name.".disk.".$shortdisk;
+  my($maxsize)= $disksize * $blocksize;
+
+  if($disktype == 2 ) {      # memory use
+        next if($rmemoid); # we already have it
+    $target_lines .= <<ECHO;
+#######################################
+# Memory used
+Target[$router_name-memory]: 1.3.6.1.2.1.25.2.3.1.6.$instance&1.3.6.1.2.1.25.2.3.1.5.$instance:$router_connect * $blocksize
+PageTop[$router_name-memory]: <h1>$router_name Memory Used</h1>
+Title[$router_name-memory]: Memory used on $router_name
+SetEnv[$router_name-memory]: MRTG_INT_DESCR="Memory"
+MaxBytes[$router_name-memory]: $maxsize
+Options[$router_name-memory]: gauge, growright
+YLegend[$router_name-memory]: Bytes
+kilo[$router_name-memory]: 1024
+ShortLegend[$router_name-memory]: B
+LegendI[$router_name-memory]: used:
+LegendO[$router_name-memory]: size:
+Legend1[$router_name-memory]: Memory used
+Legend2[$router_name-memory]: Memory total
+Legend3[$router_name-memory]: Peak memory used
+Legend4[$router_name-memory]: Peak memory total
+routers.cgi*Options[$router_name-memory]: nototal  noo, growright
+routers.cgi*Mode[$router_name-memory]: memory
+routers.cgi*ShortDesc[$router_name-memory]: Memory
+routers.cgi*Description[$router_name-memory]: Memory used: $router_name
+routers.cgi*InOut[$router_name-memory]: no
+routers.cgi*InSummary[$router_name-memory]: yes
+routers.cgi*InCompact[$router_name-memory]: yes
+routers.cgi*Icon[$router_name-memory]: chip-sm.gif
+routers.cgi*MBLegend[$router_name-memory]: 100% usage
+ECHO
+  } elsif($disktype == 3 ) { # swap use
+        next if($smemoid);
+    $target_lines .= <<ECHO;
+#######################################
+# Swap used
+Target[$router_name-swap]: 1.3.6.1.2.1.25.2.3.1.6.$instance&1.3.6.1.2.1.25.2.3.1.5.$instance:$router_connect * $blocksize
+PageTop[$router_name-swap]: <h1>$router_name Swap space used</h1>
+Title[$router_name-swap]: Swap space used on $router_name
+SetEnv[$router_name-swap]: MRTG_INT_DESCR="Swap"
+MaxBytes[$router_name-swap]: $maxsize
+Options[$router_name-swap]: gauge, growright
+YLegend[$router_name-swap]: Bytes
+kilo[$router_name-swap]: 1024
+ShortLegend[$router_name-swap]: B
+LegendI[$router_name-swap]: used:
+LegendO[$router_name-swap]: size:
+Legend1[$router_name-swap]: Swap space used
+Legend2[$router_name-swap]: Swap space total
+Legend3[$router_name-swap]: Peak swap used
+Legend4[$router_name-swap]: Peak swap total
+routers.cgi*Options[$router_name-swap]: nototal noo, growright
+routers.cgi*Mode[$router_name-swap]: memory
+routers.cgi*ShortDesc[$router_name-swap]: Swap
+routers.cgi*Description[$router_name-swap]: Swap space used: $router_name
+routers.cgi*InOut[$router_name-swap]: no
+routers.cgi*InSummary[$router_name-swap]: yes
+routers.cgi*InCompact[$router_name-swap]: yes
+routers.cgi*Icon[$router_name-swap]: chip-sm.gif
+routers.cgi*MBLegend[$router_name-swap]: 100% usage
+ECHO
+  } elsif($disktype == 4 ) { # filesystems
+    $fscnt += 1;
+$target_lines .= <<ECHO;
+#######################################
+# Filesystem $diskname
+Target[$target_name]: 1.3.6.1.2.1.25.2.3.1.6.$instance&1.3.6.1.2.1.25.2.3.1.6.$instance:$router_connect * $blocksize
+PageTop[$target_name]: <h1>$router_name Disk space used ($diskname)</h1>
+Title[$target_name]: Disk space used on $router_name ($diskname)
+SetEnv[$target_name]: MRTG_INT_DESCR="$diskname"
+MaxBytes[$target_name]: $maxsize
+Unscaled[$target_name]: ymwd
+Options[$target_name]: gauge, noo, growright
+YLegend[$target_name]: Bytes
+kilo[$target_name]: 1024
+ShortLegend[$target_name]: B
+LegendI[$target_name]: used:
+Legend1[$target_name]: Space used
+Legend3[$target_name]: Peak used
+routers.cgi*Options[$target_name]: nototal, noo, growright
+routers.cgi*Mode[$target_name]: general
+routers.cgi*ShortDesc[$target_name]: Disk: $diskname
+routers.cgi*Description[$target_name]: $router_name space used on $diskname
+routers.cgi*InOut[$target_name]: no
+routers.cgi*InMenu[$target_name]: yes
+routers.cgi*InSummary[$target_name]: yes
+routers.cgi*InCompact[$target_name]: yes
+routers.cgi*Icon[$target_name]: dir-sm.gif
+routers.cgi*Graph[$target_name]: $router_name-filesystems "Disk space" withtotal noo
+ECHO
+  }
+}
+if($fscnt) {
+$target_lines .= <<ECHO;
+routers.cgi*Options[$router_name-filesystems]: available
+routers.cgi*Icon[$router_name-filesystems]: dir-sm.gif
+routers.cgi*ShortDesc[$router_name-filesystems]: Filesystems
+routers.cgi*Title[$router_name-filesystems]: Filesystems on $router_name
+ECHO
+}
+
+my($laoid) = oid_pick($router_connect,$v3opt,"1.3.6.1.4.1.2021.10.1.5.2");
+my($laoid2) = oid_pick($router_connect,$v3opt,"1.3.6.1.4.1.2021.10.1.5.3");
+if($laoid and $laoid2) { # this uses the UCD MIB
+$target_lines .= <<ECHO;
+#######################################
+# Load average
+Target[$router_name-lavg]: $laoid&$laoid2:$router_connect
+Factor[$router_name-lavg]: 0.01
+YTicsFactor[$router_name-lavg]: 0.01
+PageTop[$router_name-lavg]: <h1>$router_name Load Average</h1>
+Title[$router_name-lavg]: Load Average on $router_name
+SetEnv[$router_name-lavg]: MRTG_INT_DESCR="Load Average"
+MaxBytes[$router_name-lavg]: 9000
+Options[$router_name-lavg]: nopercent, gauge, growright
+YLegend[$router_name-lavg]: Processes
+ShortLegend[$router_name-lavg]: &nbsp;
+LegendI[$router_name-lavg]: 5min avg:
+LegendO[$router_name-lavg]: 15min avg:
+Legend1[$router_name-lavg]: 5-min load average
+Legend2[$router_name-lavg]: 15-min load average
+Legend3[$router_name-lavg]: Peak 5-min load average
+Legend4[$router_name-lavg]: Peak 15-min load average
+routers.cgi*Options[$router_name-lavg]: nomax, nototal, fixunit, noo
+routers.cgi*Mode[$router_name-lavg]: general
+routers.cgi*ShortDesc[$router_name-lavg]: Load Avg
+routers.cgi*Description[$router_name-lavg]: Load average: $router_name
+routers.cgi*UnScaled[$router_name-lavg]: none
+routers.cgi*WithPeak[$router_name-lavg]: none
+routers.cgi*InOut[$router_name-lavg]: no
+routers.cgi*InSummary[$router_name-lavg]: yes
+routers.cgi*InCompact[$router_name-lavg]: no
+routers.cgi*Icon[$router_name-lavg]: load-sm.gif
+ECHO
+}
+
+my($ucoid) = oid_pick($router_connect,$v3opt,"1.3.6.1.2.1.25.1.5.0");
+if($ucoid) {
+$target_lines .= <<ECHO;
+#######################################
+# User count
+Target[$router_name-users]: $ucoid&$ucoid:$router_connect
+PageTop[$router_name-users]: <h1>$router_name Active users</h1>
+Title[$router_name-users]: Active Users on $router_name
+MaxBytes[$router_name-users]: 1000
+SetEnv[$router_name-users]: MRTG_INT_DESCR="Users"
+Options[$router_name-users]: nopercent, gauge, noo, growright
+YLegend[$router_name-users]: Users
+ShortLegend[$router_name-users]: &nbsp;
+LegendI[$router_name-users]: Users
+Legend1[$router_name-users]: Active Users
+Legend3[$router_name-users]: Peak Active Users
+routers.cgi*Options[$router_name-users]: nomax, nototal, fixunit, noo
+routers.cgi*Mode[$router_name-users]: general
+routers.cgi*ShortDesc[$router_name-users]: Users
+routers.cgi*Description[$router_name-users]: Users on $router_name
+routers.cgi*UnScaled[$router_name-users]: none
+routers.cgi*InOut[$router_name-users]: no
+routers.cgi*InSummary[$router_name-users]: yes
+routers.cgi*InCompact[$router_name-users]: no
+routers.cgi*Icon[$router_name-users]: user-sm.gif
+ECHO
+}
+
+my($proid) = oid_pick($router_connect,$v3opt,"1.3.6.1.2.1.25.1.6.0");
+if($proid) {
+my($maxpr) = snmpget($router_connect, "1.3.6.1.2.1.25.1.7.0");
+$target_lines .= <<ECHO;
+#######################################
+# Process count
+Target[$router_name-procs]: $proid&$proid:$router_connect
+PageTop[$router_name-procs]: <h1>$router_name Processes</h1>
+Title[$router_name-procs]: Processes on $router_name
+ECHO
+if($maxpr) {
+        $target_lines .= "MaxBytes[$router_name-procs]: $maxpr\n";
+} else {
+        $target_lines .= "MaxBytes[$router_name-procs]: 10000\n";
+}
+$target_lines .=
+  "routers.cgi*Options[$router_name-procs]: nototal, fixunit, noo"
+  .($maxpr?"":", nomax")."\n";
+$target_lines .= <<ECHO;
+SetEnv[$router_name-procs]: MRTG_INT_DESCR="Procs"
+Options[$router_name-procs]: nopercent, gauge, noo, growright
+YLegend[$router_name-procs]: Processes
+ShortLegend[$router_name-procs]: &nbsp;
+LegendI[$router_name-procs]: Procs
+Legend1[$router_name-procs]: Processes
+Legend3[$router_name-procs]: Peak Processes
+routers.cgi*Mode[$router_name-procs]: general
+routers.cgi*ShortDesc[$router_name-procs]: Processes
+routers.cgi*Description[$router_name-procs]: Processes on $router_name
+routers.cgi*UnScaled[$router_name-procs]: none
+routers.cgi*InOut[$router_name-procs]: no
+routers.cgi*InSummary[$router_name-procs]: yes
+routers.cgi*InCompact[$router_name-procs]: no
+routers.cgi*Icon[$router_name-procs]: list-sm.gif
+routers.cgi*MBLegend[$router_name-procs]: Max capacity
+ECHO
+}
+
+my($uptid) = oid_pick($router_connect,$v3opt,"1.3.6.1.2.1.25.1.1.0");
+if($uptid) {
+$target_lines .= <<ECHO;
+#######################################
+# Uptime
+# This is an ugly hack to get Timeticks into MRTG, assuming rup works...
+Target[$router_name-uptime]: `/usr/bin/rup -s $router_name | awk '{print \$3}'; echo 0; echo 0; echo $router_name`/864
+PageTop[$router_name-uptime]: <h1>$router_name Uptime</h1>
+Title[$router_name-uptime]: Uptime on $router_name
+MaxBytes[$router_name-uptime]: 1000000
+SetEnv[$router_name-uptime]: MRTG_INT_DESCR="Uptime"
+YTicsFactor[$router_name-uptime]: 0.01
+Factor[$router_name-uptime]: 0.01
+Options[$router_name-uptime]: nopercent, gauge, noo, growright
+YLegend[$router_name-uptime]: Days
+ShortLegend[$router_name-uptime]: days;
+LegendI[$router_name-uptime]: Uptime
+Legend1[$router_name-uptime]: Uptime
+Legend3[$router_name-uptime]: Peak Uptime
+routers.cgi*Options[$router_name-uptime]: nototal, fixunit, noo, nomax
+routers.cgi*Mode[$router_name-uptime]: general
+routers.cgi*ShortDesc[$router_name-uptime]: Uptime
+routers.cgi*Description[$router_name-uptime]: Uptime on $router_name
+routers.cgi*UnScaled[$router_name-uptime]: none
+routers.cgi*InOut[$router_name-uptime]: no
+routers.cgi*InSummary[$router_name-uptime]: yes
+routers.cgi*InCompact[$router_name-uptime]: no
+routers.cgi*Icon[$router_name-uptime]: list-sm.gif
+routers.cgi*MBLegend[$router_name-uptime]: Max capacity
+ECHO
+}
