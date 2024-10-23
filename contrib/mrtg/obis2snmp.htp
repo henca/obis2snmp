@@ -90,7 +90,7 @@ PageTop[$target_name]: <h1>$metername $descr</h1>
 Title[$target_name]: $metername $descr
 SetEnv[$target_name]: MRTG_INT_DESCR="$metername $descr"
 MaxBytes[$target_name]: 100000000
-Options[$target_name]: gauge, $noo growright
+Options[$target_name]: nopercent, gauge, $noo growright
 YLegend[$target_name]: $unit
 kilo[$target_name]: 1000
 ShortLegend[$target_name]: $unit
@@ -130,7 +130,7 @@ PageTop[$target_name]: <h1>$metername $descr</h1>
 Title[$target_name]: $metername $descr
 SetEnv[$target_name]: MRTG_INT_DESCR="$metername $descr"
 MaxBytes[$target_name]: 100000000
-Options[$target_name]: gauge, noo growright
+Options[$target_name]: nopercent, gauge, noo growright
 YLegend[$target_name]: $unit
 kilo[$target_name]: 1000
 ShortLegend[$target_name]: $unit
@@ -167,7 +167,7 @@ PageTop[$target_name]: <h1>$metername $descr</h1>
 Title[$target_name]: $metername $descr
 SetEnv[$target_name]: MRTG_INT_DESCR="$metername $descr"
 MaxBytes[$target_name]: 100000000
-Options[$target_name]: gauge, noo growright
+Options[$target_name]: nopercent, gauge, noo growright
 YLegend[$target_name]: $unit
 kilo[$target_name]: 1000
 ShortLegend[$target_name]: $unit
@@ -204,7 +204,7 @@ PageTop[$target_name]: <h1>$metername $descr</h1>
 Title[$target_name]: $metername $descr
 SetEnv[$target_name]: MRTG_INT_DESCR="$metername $descr"
 MaxBytes[$target_name]: 100000000
-Options[$target_name]: gauge, noo growright
+Options[$target_name]: nopercent, gauge, noo growright
 YLegend[$target_name]: $unit
 kilo[$target_name]: 1000
 ShortLegend[$target_name]: $unit
