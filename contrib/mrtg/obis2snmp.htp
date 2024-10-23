@@ -155,7 +155,7 @@ ECHO
 $target_lines .= <<ECHO;
 #######################################
 # OBIS $metername
-Target[$target_name]: 1.3.6.1.4.1.62368.1.1.12.$obisandinstance&1.3.6.1.4.1.62368.1.1.12.$obisandinstance:$router_connect / $multiplier
+Target[$target_name]: 1.3.6.1.4.1.62368.1.1.10.$obisandinstance&1.3.6.1.4.1.62368.1.1.10.$obisandinstance:$router_connect / $multiplier
 Factor[$target_name]: 1
 YTicsFactor[$target_name]: 1
 PageTop[$target_name]: <h1>$metername $descr</h1>
@@ -192,7 +192,7 @@ ECHO
 $target_lines .= <<ECHO;
 #######################################
 # OBIS $metername
-Target[$target_name]: 1.3.6.1.4.1.62368.1.1.12.$obisandinstance&1.3.6.1.4.1.62368.1.1.12.$obisandinstance:$router_connect / $multiplier
+Target[$target_name]: 1.3.6.1.4.1.62368.1.1.9.$obisandinstance&1.3.6.1.4.1.62368.1.1.9.$obisandinstance:$router_connect / $multiplier
 Factor[$target_name]: 1
 YTicsFactor[$target_name]: 1
 PageTop[$target_name]: <h1>$metername $descr</h1>
