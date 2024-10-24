@@ -42,6 +42,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "obis2snmp.h"
 #include <net-snmp/agent/util_funcs.h>
 
+#define VERSION_STRING "0.0beta"
+
 struct driver_data {
    void *dlhandle;
    void *instance;
@@ -239,13 +241,20 @@ main (int argc, char **argv) {
 
   curl_global_init(CURL_GLOBAL_NOTHING);
   
-  while ((opt = getopt(argc, argv, "hc:")) != -1) {
+  while ((opt = getopt(argc, argv, "vhc:")) != -1) {
      switch(opt) {
 	case 'c':
 	   conffile=optarg;
 	   break;
 	case 'h':
+	case 'v':
 	default:
+	   fprintf(
+	      stderr,
+	      "obis2snmp_agentxd version %s\n", VERSION_STRING);
+	   fprintf(
+	      stderr,
+	      "Copyright (c) Henrik Carlqvist, BSD-2-Clause license\n");
 	   fprintf(stderr,
 		   "Usage: %s [-c /path/to/config.json]\n"
 		   "(-c defaults to %s)\n",
