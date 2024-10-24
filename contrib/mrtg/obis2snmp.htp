@@ -279,7 +279,7 @@ PageTop[$target_name]: <h1>$metername zero filler</h1>
     <TR><TD>Type:</TD><TD>$metername</TD></TR>
     <TR><TD>IP:</TD><TD>$meterip</TD></TR>
     <TR><TD>MAC:</TD><TD>$metermac</TD></TR>
-    <TR><TH>MAC:</TD><TD>This filler graph is just to make sure that the next meter start on a new line.</TH></TR>
+    <TR><TH colspan="2">This filler graph is just to make sure that the next meter start on a new line.</TH></TR>
   </TABLE>
 Title[$target_name]: $metername zero filler
 SetEnv[$target_name]: MRTG_INT_DESCR="$metername"
