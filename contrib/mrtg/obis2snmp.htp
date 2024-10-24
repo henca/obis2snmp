@@ -265,7 +265,7 @@ routers.cgi*InCompact[$target_name]: yes
 routers.cgi*Icon[$target_name]: chip-sm.gif
 routers.cgi*Graph[$target_name]: $metername "RSSI" noo
 ECHO
-  if(($obiscnt %2 == 0) && ($metercnt < $nummeters))
+  if(($obiscnt %2 == 1) && ($metercnt < $nummeters))
   {
     my($target_name)=$router_name.".filler.".$shortmeter;
 $target_lines .= <<ECHO;
