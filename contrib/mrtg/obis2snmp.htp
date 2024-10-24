@@ -8,6 +8,7 @@ $head_lines .= "#---------------------------------------------------------------
 
 my (@meter) = snmpwalk($router_connect,'1.3.6.1.4.1.62368.1.1.1');
 my( $metercnt ) = 0;
+my( $nummeters ) = @meter;
 foreach my $tmps (@meter) {
   $tmps =~ /(\d+):(\d+)/;
   next if(!$2);
@@ -64,6 +65,7 @@ foreach my $tmps (@meter) {
                               "1.3.6.1.4.1.62368.1.1.12." . $obisandinstance);
       if(length($obismax))
       {
+        $obiscnt += 1;
         my($target_name)=$router_name.".obis.".$obisandinstance;
         if(length($obismin))
         {
@@ -78,9 +80,9 @@ foreach my $tmps (@meter) {
 $target_lines .= <<ECHO;
 #######################################
 # OBIS $metername
-Target[$target_name]: 1.3.6.1.4.1.62368.1.1.11.$obisandinstance&1.3.6.1.4.1.62368.1.1.12.$obisandinstance:$router_connect / $multiplier
-Factor[$target_name]: 1
-YTicsFactor[$target_name]: 1
+Target[$target_name]: 1.3.6.1.4.1.62368.1.1.11.$obisandinstance&1.3.6.1.4.1.62368.1.1.12.$obisandinstance:$router_connect 
+Factor[$target_name]: 1.0 / $multiplier
+YTicsFactor[$target_name]: 1.0 / $multiplier
 PageTop[$target_name]: <h1>$metername $descr</h1>
   <TABLE>
     <TR><TD>Type:</TD><TD>$metername</TD></TR>
@@ -114,13 +116,14 @@ ECHO
       }
       elsif(length($obismin))
       {
+        $obiscnt += 1;
         my($target_name)=$router_name.".obis.".$obisandinstance;
 $target_lines .= <<ECHO;
 #######################################
 # OBIS $metername
-Target[$target_name]: 1.3.6.1.4.1.62368.1.1.12.$obisandinstance&1.3.6.1.4.1.62368.1.1.12.$obisandinstance:$router_connect / $multiplier
-Factor[$target_name]: 1
-YTicsFactor[$target_name]: 1
+Target[$target_name]: 1.3.6.1.4.1.62368.1.1.12.$obisandinstance&1.3.6.1.4.1.62368.1.1.12.$obisandinstance:$router_connect
+Factor[$target_name]: 1.0 / $multiplier
+YTicsFactor[$target_name]: 1.0 / $multiplier
 PageTop[$target_name]: <h1>$metername $descr</h1>
   <TABLE>
     <TR><TD>Type:</TD><TD>$metername</TD></TR>
@@ -151,13 +154,14 @@ ECHO
       }
       elsif(length($obismean))
       {
+        $obiscnt += 1;
         my($target_name)=$router_name.".obis.".$obisandinstance;
 $target_lines .= <<ECHO;
 #######################################
 # OBIS $metername
-Target[$target_name]: 1.3.6.1.4.1.62368.1.1.10.$obisandinstance&1.3.6.1.4.1.62368.1.1.10.$obisandinstance:$router_connect / $multiplier
-Factor[$target_name]: 1
-YTicsFactor[$target_name]: 1
+Target[$target_name]: 1.3.6.1.4.1.62368.1.1.10.$obisandinstance&1.3.6.1.4.1.62368.1.1.10.$obisandinstance:$router_connect
+Factor[$target_name]: 1.0 / $multiplier
+YTicsFactor[$target_name]: 1.0 / $multiplier
 PageTop[$target_name]: <h1>$metername $descr</h1>
   <TABLE>
     <TR><TD>Type:</TD><TD>$metername</TD></TR>
@@ -188,13 +192,14 @@ ECHO
       }
       elsif(length($obislatest))
       {
+        $obiscnt += 1;
         my($target_name)=$router_name.".obis.".$obisandinstance;
 $target_lines .= <<ECHO;
 #######################################
 # OBIS $metername
-Target[$target_name]: 1.3.6.1.4.1.62368.1.1.9.$obisandinstance&1.3.6.1.4.1.62368.1.1.9.$obisandinstance:$router_connect / $multiplier
-Factor[$target_name]: 1
-YTicsFactor[$target_name]: 1
+Target[$target_name]: 1.3.6.1.4.1.62368.1.1.9.$obisandinstance&1.3.6.1.4.1.62368.1.1.9.$obisandinstance:$router_connect
+Factor[$target_name]: 1.0 / $multiplier
+YTicsFactor[$target_name]: 1.0 / $multiplier
 PageTop[$target_name]: <h1>$metername $descr</h1>
   <TABLE>
     <TR><TD>Type:</TD><TD>$metername</TD></TR>
@@ -259,4 +264,41 @@ routers.cgi*InCompact[$target_name]: yes
 routers.cgi*Icon[$target_name]: chip-sm.gif
 routers.cgi*Graph[$target_name]: $metername "RSSI" noo
 ECHO
+  if(($obiscnt %2 == 0) && ($metercnt < $nummeters))
+  {
+    my($target_name)=$router_name.".filler.".$shortmeter;
+$target_lines .= <<ECHO;
+#######################################
+# Dummy filler to make sure that next meter starts on new row
+Target[$target_name]: `echo 0;echo 0;echo 0; echo $router_name`
+Factor[$target_name]: 1
+YTicsFactor[$target_name]: 1
+PageTop[$target_name]: <h1>$metername zero filler</h1>
+  <TABLE>
+    <TR><TD>Type:</TD><TD>$metername</TD></TR>
+    <TR><TD>IP:</TD><TD>$meterip</TD></TR>
+    <TR><TD>MAC:</TD><TD>$metermac</TD></TR>
+  </TABLE>
+Title[$target_name]: $metername zero filler
+SetEnv[$target_name]: MRTG_INT_DESCR="$metername"
+MaxBytes[$target_name]: 1
+Options[$target_name]: nopercent, gauge, noo, growright
+YLegend[$target_name]: zero
+kilo[$target_name]: 1000
+ShortLegend[$target_name]: zero
+LegendI[$target_name]: zero filler
+Legend1[$target_name]: zero filler
+Legend3[$target_name]: zero filler
+routers.cgi*Options[$target_name]: nomax, nototal, fixunit, noo
+routers.cgi*Mode[$target_name]: general
+routers.cgi*ShortDesc[$target_name]: zero: $metername
+routers.cgi*Description[$target_name]: zero filler on $metername
+routers.cgi*InOut[$target_name]: no
+routers.cgi*InMenu[$target_name]: yes
+routers.cgi*InSummary[$target_name]: yes
+routers.cgi*InCompact[$target_name]: yes
+routers.cgi*Icon[$target_name]: chip-sm.gif
+routers.cgi*Graph[$target_name]: $metername "zero filler" noo
+ECHO
+  }
 }
