@@ -11,4 +11,4 @@ The source code for the program has a BSD-2-Clause license and the MIB file
 describing the OIDs used has a Zlib license as described in [LICENSE](LICENSE)
 
 This project is work in progress in pre-beta state.
-anything.
+
