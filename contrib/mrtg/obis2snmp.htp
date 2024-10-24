@@ -8,7 +8,7 @@ $head_lines .= "#---------------------------------------------------------------
 
 my (@meter) = snmpwalk($router_connect,'1.3.6.1.4.1.62368.1.1.1');
 my( $metercnt ) = 0;
-my( $nummeters ) = @meter;
+my( $nummeters ) = @#meter;
 foreach my $tmps (@meter) {
   $tmps =~ /(\d+):(\d+)/;
   next if(!$2);
@@ -266,7 +266,7 @@ routers.cgi*Icon[$target_name]: chip-sm.gif
 routers.cgi*Graph[$target_name]: $metername "RSSI" noo
 ECHO
 $target_lines .= "# oc: " . $obiscnt . " mc: " . $metercnt . " nm: " . $nummeters . " mod: " . ($obiscnt %2);
-  if(($obiscnt %2 == 1) && ($metercnt < $nummeters))
+  if(($obiscnt %2 == 0) && ($metercnt <= $nummeters))
   {
     my($target_name)=$router_name.".filler.".$shortmeter;
 $target_lines .= <<ECHO;
