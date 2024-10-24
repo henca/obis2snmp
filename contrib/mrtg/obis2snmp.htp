@@ -8,7 +8,7 @@ $head_lines .= "#---------------------------------------------------------------
 
 my (@meter) = snmpwalk($router_connect,'1.3.6.1.4.1.62368.1.1.1');
 my( $metercnt ) = 0;
-my( $nummeters ) = @#meter;
+my( $nummeters ) = $#meter;
 foreach my $tmps (@meter) {
   $tmps =~ /(\d+):(\d+)/;
   next if(!$2);
