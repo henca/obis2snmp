@@ -10,10 +10,10 @@ Contributions of more drivers are welcome!
 The configuration file (default /usr/local/etc/obis2snmp_config.json) lists
 drives to be used together with their parameters:
 
-`{"meters": [<br/>
-   {"driver": "P1IB", "parameters": "ip=192.168.67.112"},<br/>
-   {"driver": "P1IB", "parameters": "ip=192.168.67.112,multiplier=1"}<br/>
- ]}`
+`{"meters": [`
+`   {"driver": "P1IB", "parameters": "ip=192.168.67.112"},`
+`   {"driver": "P1IB", "parameters": "ip=192.168.67.112,multiplier=1"}`
+` ]}`
 
 In the example above I really only have one utility meter to read, but
 make it appear as two meters by giving slightly different parameters.
