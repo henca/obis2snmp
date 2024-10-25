@@ -3,10 +3,10 @@ Once downloaded and unpacked or checked out from git, in the directory
 with this README.md there is a Makefile.
 
 That Makefile is used to build:
-'make'
+`make`
 
 The Makefile is also used to install:
-'sudo make install'
+`sudo make install`
 
 During build time as well as install time a number of variables can be set. If
 any of those variables are customized the same variable should be given at
