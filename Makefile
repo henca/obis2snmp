@@ -73,7 +73,7 @@ $(PLGOBJDIR)/%.o: $(PLGSRCDIR)/%.c | $(PLGOBJDIR)
 	gcc -c $(CFLAGS) -o $@ $<
 
 $(READMEMD): $(MDPARTS)
-	cat $^ > $@
+	cat $(sort $^) > $@
 
 clean:
 	rm -f $(OBJS) agentx-daemon.o $(AGENTX) $(PLUGINS)
