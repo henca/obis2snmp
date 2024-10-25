@@ -12,7 +12,7 @@ During build time as well as install time a number of variables can be set. If
 any of those variables are customized the same variable should be given at
 build time and install time.
 
-PREFIX (default /usr/local), where to install, the same PREFIX shoule be used
+PREFIX (default /usr/local), where to install, the same PREFIX should be used
        at build time and install time.
 
 SBIN_DIR (default PREFIX/sbin) where the binary obis2snmp_agentxd is installed
@@ -21,10 +21,10 @@ ETC_DIR (default PREFIX/etc or /etc if PREFIX=/usr) where obis2snmp_config.json
         is installed.
 
 DESTDIR (default empty) Top level directory which might be useful when building
-        a package. Please be aware thugh that the MIB file probably will
+        a package. Please be aware though that the MIB file probably will
         require some extra tinkering when building such a package.
 
-Next to SBIN_DIR a directoy lib or lib64 will be created with a subdirectory
+Next to SBIN_DIR a directory lib or lib64 will be created with a subdirectory
 obis2snmp containing driver plugins for different meters.
 
 ## Prerequisites
