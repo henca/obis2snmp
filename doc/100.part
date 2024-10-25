@@ -23,7 +23,7 @@ make it appear as two meters by giving slightly different parameters.
 |Parameter |Mandatory|Explanation                              |
 |----------|---------|-----------------------------------------|
 |ip        |yes      |The IP address of he P1IB unit to monitor|
-|multiplier|no       |(default 1000) The value to multiply the obis floating point values with to get enough precision in SNMP integer values.|
+|multiplier|no       |(default 1000) The value to multiply the obis floating point values with to get enough precision in SNMP integer values. For P1IB it is really not recommended to change the default value.|
 
 ## License
 The source code for the program has a BSD-2-Clause license and the MIB file
