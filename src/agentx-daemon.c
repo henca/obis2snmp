@@ -227,7 +227,7 @@ int
 main (int argc, char **argv) {
   int background = 1; /* change if you not want to run in the background */
   int syslog = 1; /* change this if you not want to use syslog */
-  char *conffile = ETC_DIR "/obsi2snmp_config.json";
+  char *conffile = ETC_DIR "/obis2snmp_config.json";
   int opt;
   struct json_object *conf_obj, *meter_array, *meter_obj;
   const char *driver;
