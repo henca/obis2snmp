@@ -15,6 +15,9 @@ else
 ETC_DIR = $(PREFIX)/etc
 endif
 
+INSTALLED_CONFIG_FILE = $(ETC_DIR)/obis2snmp_config.json
+SRC_CONFIG_FILE = etc/obis2snmp_config.json
+
 INCDIR = inc
 SRCDIR = src
 OBJDIR = obj
@@ -78,7 +81,7 @@ $(READMEMD): $(MDPARTS)
 clean:
 	rm -f $(OBJS) agentx-daemon.o $(AGENTX) $(PLUGINS)
 
-install: $(AGENTX)
+install: $(AGENTX) | $(INSTALLED_CONFIG_FILE)
 	install -d $(DESTDIR)$(NETSNMP_MIBS_DIR)
 	install -m 644 HenrikC-MIB.txt $(DESTDIR)$(NETSNMP_MIBS_DIR)
 	install -d $(DESTDIR)$(SBIN_DIR)
@@ -86,5 +89,10 @@ install: $(AGENTX)
 	install -d $(DESTDIR)$(SBIN_DIR)/../$(PLGDIR)
 	install -m 755 $(PLG_FILES) $(DESTDIR)$(SBIN_DIR)/../$(PLGDIR)
 	grep HenrikC-MIB $(DESTDIR)$(NETSNMP_MIBS_DIR)/../snmp.conf || \
-         echo "mibs +HenrikC-MIB" >> $(DESTDIR)$(NETSNMP_MIBS_DIR)/../snmp.conf
+           echo "mibs +HenrikC-MIB" >> \
+           $(DESTDIR)$(NETSNMP_MIBS_DIR)/../snmp.conf
 
+# Avoid overwriting customized config file by making this rule order-only
+$(INSTALLED_CONFIG_FILE): | $(SRC_CONFIG_FILE)
+	install -d $(ETC_DIR)
+	install -b -m 644 $| $(@D)
