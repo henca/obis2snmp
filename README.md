@@ -66,6 +66,19 @@ P1IB driver.
 
 To get data from meters **libcurl** is also needed.
 
+## Screenshots
+### The help text
+![help text](doc/img/screenshot_help.png?raw=true "Help text")
+
+### snmpwalk
+![snmpwalk](doc/img/screenshot_snmpwalk.png?raw=true "snmpwalk")
+
+### mrtg
+The output from snmpwalk contains plenty of data, but it becomes really
+useful when you use your favorite tool to present snmp data in graphs. The
+graphs below are from [mrtg](https://oss.oetiker.ch/mrtg/)
+![mrtg](doc/img/screenshot_seamonkey.png?raw=true "mrtg")
+
 ## Note
 This project is work in progress in pre-beta state.
 
