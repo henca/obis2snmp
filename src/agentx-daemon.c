@@ -42,7 +42,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "obis2snmp.h"
 #include <net-snmp/agent/util_funcs.h>
 
-#define VERSION_STRING "1.0"
+#define VERSION_STRING "1.1beta"
 
 struct driver_data {
    void *dlhandle;
