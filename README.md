@@ -62,13 +62,13 @@ make it appear as two meters by giving slightly different parameters.
 |multiplier|no       |(default 1000) The value to multiply the obis floating point values with to get enough precision in SNMP integer values. For P1IB it is really not recommended to change the default value.|
 
 ## Configuration of net-snmp
-In the file `snmp.conf` which usually is below /etc/snmp you should add the
+In the file `snmpd.conf` which usually is below /etc/snmp you should add the
 following line to present these obis values:
 
 `view    systemview    included   .1.3.6.1.4.1.62368.1.1`
 
 You should also make sure that net-snmp has enabled support for agentx
-subagents with the following line in `snmp.conf`:
+subagents with the following line in `snmpd.conf`:
 
 `master agentx`
 
@@ -79,7 +79,7 @@ your distribution.
 
 The program obis2snmp_agentxd does not require root privileges to fetch data
 from drivers, but it might need root privileges to connect to the net-snmp
-daemon depending on your settings in `snmp.conf`. Before changing any such
+daemon depending on your settings in `snmpd.conf`. Before changing any such
 setting you should read up on the of running a process as root vs the drawbacks
 of allowing non root processes to provide snmp data to net-snmp.
 
