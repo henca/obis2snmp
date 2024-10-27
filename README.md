@@ -80,8 +80,9 @@ your distribution.
 The program obis2snmp_agentxd does not require root privileges to fetch data
 from drivers, but it might need root privileges to connect to the net-snmp
 daemon depending on your settings in `snmpd.conf`. Before changing any such
-setting you should read up on the of running a process as root vs the drawbacks
-of allowing non root processes to provide snmp data to net-snmp.
+setting you should read up on the drawbacks of running a process as root
+versus the drawbacks of allowing non root processes to provide snmp data to
+net-snmp.
 
 ## License
 The source code for the program has a BSD-2-Clause license and the MIB file
