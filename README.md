@@ -101,6 +101,3 @@ useful when you use your favorite tool to present snmp data in graphs. The
 graphs below are from [mrtg](https://oss.oetiker.ch/mrtg/)
 ![mrtg](screenshots/seamonkey.png?raw=true "mrtg")
 
-## Note
-This project is work in progress in pre-beta state.
-
