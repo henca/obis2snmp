@@ -32,10 +32,6 @@ PLG_SRC_FILES=$(wildcard $(PLGSRCDIR)/*.c)
 PLG_OBJ_FILES = $(PLG_SRC_FILES:$(PLGSRCDIR)/%.c=$(PLGOBJDIR)/%.o)
 PLG_FILES = $(PLG_OBJ_FILES:$(PLGOBJDIR)/%.o=$(PLGDIR)/%.so)
 
-READMEMD = README.md
-DOCDIR = doc
-MDPARTS = $(wildcard $(DOCDIR)/*.part)
-
 AGENTX = $(BINDIR)/obis2snmp_agentxd
 
 # some json-c versions deprecated useful functions which then was undeprecated
@@ -50,7 +46,7 @@ LDFLAGS += $(NETSNMP_LIBS) \
 
 #OBJS = nvCtrlTable.o nvCtrlTable_data_access.o nvCtrlTable_data_get.o nvCtrlTable_interface.o
 
-all: $(AGENTX) $(PLG_FILES) $(READMEMD)
+all: $(AGENTX) $(PLG_FILES)
 
 
 SRC_FILES = $(wildcard $(SRCDIR)/*.c)
@@ -74,9 +70,6 @@ $(PLG_FILES): $(PLGDIR)/%.so: $(PLGOBJDIR)/%.o | $(PLGDIR)
 
 $(PLGOBJDIR)/%.o: $(PLGSRCDIR)/%.c | $(PLGOBJDIR)
 	gcc -c $(CFLAGS) -o $@ $<
-
-$(READMEMD): $(MDPARTS)
-	cat $(sort $^) > $@
 
 clean:
 	rm -f $(OBJS) agentx-daemon.o $(AGENTX) $(PLUGINS)
