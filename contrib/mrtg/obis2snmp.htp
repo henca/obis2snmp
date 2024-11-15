@@ -99,10 +99,13 @@ kilo[$target_name]: 1000
 ShortLegend[$target_name]: $unit
 LegendI[$target_name]: max
 LegendO[$target_name]: min
-Legend1[$target_name]: max
-Legend2[$target_name]: min
+Legend1[$target_name]: max (averaged in weekly, monthly and yearly graphs)
+Legend2[$target_name]: min (averaged in weekly, monthly and yearly graphs)
 Legend3[$target_name]: max
-Legend4[$target_name]: min
+Legend4[$target_name]: bogus maximum min value
+WithPeak[$target_name]: ymw
+# Avoid attention catching magenta for bogus graph, use dark cyan instead
+Colours[$target_name]: GREEN#00eb0c,BLUE#1000ff,DARK GREEN#006600,DARK CYAN#008b8b
 routers.cgi*Options[$target_name]: nomax, nototal, $noo fixunit
 routers.cgi*Mode[$target_name]: general
 routers.cgi*ShortDesc[$target_name]: $descr
