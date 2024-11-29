@@ -2,5 +2,6 @@ Date       Version  Comment
 ---------------------------------------------------------------------------
 ??/?? 20?? 1.1      Not yet released
                     Added peak graphs in mrtg template.
+                    Using max and mean instead of max/min in mrtg template
 
 27/10 2024 1.0      First public release
