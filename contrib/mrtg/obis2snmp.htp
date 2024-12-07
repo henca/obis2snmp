@@ -26,6 +26,8 @@ foreach my $tmps (@meter) {
   $metercnt += 1;
   my (@obisdescr) = snmpwalk($router_connect,'1.3.6.1.4.1.62368.1.1.7');
   my( $obiscnt ) = 0;
+  my( $gO );
+  my( $tN );
   foreach my $tmpt (@obisdescr) {
     $tmpt =~ /(.+):(.+)/;
     next if(!$2);
@@ -72,16 +74,27 @@ foreach my $tmps (@meter) {
         {
           $noo="";
           $haveout="";
+          if($descr =~ m/Instantaneous voltage/)
+          {
+            $gO=12;
+            $tN="min";
+          }
+          else
+          {
+            $gO=10;
+            $tN="mean";
+          }
         }
         else
         {
           $noo="noo,";
           $haveout="routers.cgi*InOut[$target_name]: no";
+          $gO=11;
         }
 $target_lines .= <<ECHO;
 #######################################
 # OBIS $metername
-Target[$target_name]: 1.3.6.1.4.1.62368.1.1.11.$obisandinstance&1.3.6.1.4.1.62368.1.1.10.$obisandinstance:$router_connect 
+Target[$target_name]: 1.3.6.1.4.1.62368.1.1.11.$obisandinstance&1.3.6.1.4.1.62368.1.1.$gO.$obisandinstance:$router_connect 
 Factor[$target_name]: $factor
 YTicsFactor[$target_name]: $factor
 PageTop[$target_name]: <h1>$metername $descr</h1>
@@ -98,11 +111,11 @@ YLegend[$target_name]: $unit
 kilo[$target_name]: 1000
 ShortLegend[$target_name]: $unit
 LegendI[$target_name]: max
-LegendO[$target_name]: mean
+LegendO[$target_name]: $tN
 Legend1[$target_name]: max (averaged in weekly, monthly and yearly graphs)
-Legend2[$target_name]: mean
+Legend2[$target_name]: $tN
 Legend3[$target_name]: max
-Legend4[$target_name]: bogus maximum mean value
+Legend4[$target_name]: bogus maximum $tN value
 WithPeak[$target_name]: ymw
 # Avoid attention catching magenta for bogus graph, use dark cyan instead
 Colours[$target_name]: GREEN#00eb0c,BLUE#1000ff,DARK GREEN#006600,DARK CYAN#008b8b
