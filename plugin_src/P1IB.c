@@ -433,8 +433,8 @@ void *init_driver(struct MeterTable_entry *entry,
        entry->numObisEntries = 0;
    if(entry->MeterIP_len)
    {
-      char url[256];
-      snprintf(url, 255, "http://%s/meterData", entry->MeterIP);
+      char url[276];
+      snprintf(url, 275, "http://%s/meterData", entry->MeterIP);
       out->curl = curl_easy_init();
       curl_easy_setopt(out->curl, CURLOPT_URL, url);
       curl_easy_setopt(out->curl, CURLOPT_WRITEFUNCTION, my_curl_callback);
