@@ -76,7 +76,38 @@ static void present_oid(oid o[], size_t l)
    }
    fprintf(stderr, "\n");
 } /* present_oid */
+
+static const char * string_oid(oid o[], size_t l)
+{
+   size_t i;
+   static char out[100];
+   int len=0;
+
+   for(i=0; i<l; i++)
+   {
+      if(len > 80)
+	 len = 80;
+      sprintf(&out[len], "%ld", o[i]);
+      len=strlen(out);
+      if(i<(l-1))
+      {
+         sprintf(&out[len], ".");
+	 len=strlen(out);
+      }
+   }
+   return out;
+} /* string_oid */
 #endif
+
+static int oid_part_match(oid o1[], oid o2[], size_t l)
+{
+   size_t i;
+
+   for(i=0; i<l; i++)
+      if(o1[i] != o2[i])
+         return 0;
+   return 1;
+}
 
 static u_char *
 agent_h_obis(struct variable *vp, oid *name, size_t *length, int exact,
@@ -86,81 +117,93 @@ agent_h_obis(struct variable *vp, oid *name, size_t *length, int exact,
    unsigned int index;
    unsigned int obis_index;
    struct obis_data *obis;
-   
+   int count=0;
+      
    if (header_simple_table(vp, name, length, exact, var_len, write_method, -1))
       return NULL;
    if(*length < 8)
       return NULL;
-   index = name[*length -1];
-   if(index > MaxRegisteredEntry) return NULL;
-   obis_index = vp->magic;
-   if(obis_index >= pMeterEntries[index-1].numObisEntries)
-      return NULL;
-   obis = &(pMeterEntries[index-1].ObisEntries[obis_index]);
-   switch(name[*length -7])
+   do
    {
-      case COLUMN_METEROBISDESCRIPTION:
-	 if(!obis->description_len)
-	 {
+      if(count++ > 3*MaxRegisteredEntry) /* this should not happen */
+	 return NULL;
+      index = name[*length -1];
+      if(index < 1) return NULL;
+      if(index > MaxRegisteredEntry) return NULL;
+      obis_index = vp->magic;
+      obis = &(pMeterEntries[index-1].ObisEntries[obis_index]);
+      if(!oid_part_match(&name[*length -6], obis->obis_oid, 5))
+	 if(header_simple_table(vp, name, length, exact, var_len,
+				write_method, -1))
 	    return NULL;
-	 }
-	 else
-	 {
-	    *var_len = obis->description_len;
-	    return (u_char *) obis->description;
-	 }
-      case COLUMN_METEROBISUNIT:
-	 if(!obis->unit_len)
-	 {
-	    return NULL;
-	 }
-	 else
-	 {
-	    *var_len = obis->unit_len;
-	    return (u_char *) obis->unit;
-	 }
-      case COLUMN_METEROBISLATEST:
-	 if(!obis->latest_is_valid)
-	 {
-	    return NULL;
-	 }
-	 else
-	 {
-	    long_ret = obis->latest_value;
-	    return (u_char *) &long_ret;
-	 }
-      case COLUMN_METEROBIS6MINMEAN:
-	 if(!obis->mean6m_is_valid)
-	 {
-	    return NULL;
-	 }
-	 else
-	 {
-	    long_ret = obis->mean6m_value;
-	    return (u_char *) &long_ret;
-	 }
-      case COLUMN_METEROBIS6MINMAX:
-	 if(!obis->max6m_is_valid)
-	 {
-	    return NULL;
-	 }
-	 else
-	 {
-	    long_ret = obis->max6m_value;
-	    return (u_char *) &long_ret;
-	 }
-      case COLUMN_METEROBIS6MINMIN:
-	 if(!obis->min6m_is_valid)
-	 {
-	    return NULL;
-	 }
-	 else
-	 {
-	    long_ret = obis->min6m_value;
-	    return (u_char *) &long_ret;
-	 }
-      default:
-	 break;
+   } while((!exact) && !oid_part_match(&name[*length -6], obis->obis_oid, 5));
+   if(oid_part_match(&name[*length -6], obis->obis_oid, 5))
+   {
+      switch(name[*length -7])
+      {
+	 case COLUMN_METEROBISDESCRIPTION:
+	    if(!obis->description_len)
+	    {
+	       return NULL;
+	    }
+	    else
+	    {
+	       *var_len = obis->description_len;
+	       return (u_char *) obis->description;
+	    }
+	 case COLUMN_METEROBISUNIT:
+	    if(!obis->unit_len)
+	    {
+	       return NULL;
+	    }
+	    else
+	    {
+	       *var_len = obis->unit_len;
+	       return (u_char *) obis->unit;
+	    }
+	 case COLUMN_METEROBISLATEST:
+	    if(!obis->latest_is_valid)
+	    {
+	       return NULL;
+	    }
+	    else
+	    {
+	       long_ret = obis->latest_value;
+	       return (u_char *) &long_ret;
+	    }
+	 case COLUMN_METEROBIS6MINMEAN:
+	    if(!obis->mean6m_is_valid)
+	    {
+	       return NULL;
+	    }
+	    else
+	    {
+	       long_ret = obis->mean6m_value;
+	       return (u_char *) &long_ret;
+	    }
+	 case COLUMN_METEROBIS6MINMAX:
+	    if(!obis->max6m_is_valid)
+	    {
+	       return NULL;
+	    }
+	    else
+	    {
+	       long_ret = obis->max6m_value;
+	       return (u_char *) &long_ret;
+	    }
+	 case COLUMN_METEROBIS6MINMIN:
+	    if(!obis->min6m_is_valid)
+	    {
+	       return NULL;
+	    }
+	    else
+	    {
+	       long_ret = obis->min6m_value;
+	       return (u_char *) &long_ret;
+	    }
+	 default:
+	    break;
+      }
    }
    return NULL;
 } /* agent_h_obis */
@@ -238,6 +281,7 @@ main (int argc, char **argv) {
   char driver_path[256];
   time_t last_time_updated=0;
   time_t current_time;
+  char descr[20];
 
   curl_global_init(CURL_GLOBAL_NOTHING);
   
@@ -377,7 +421,8 @@ main (int argc, char **argv) {
 			 &agent_meter_vars[num_vars+1],
 			 (5-num_vars)*sizeof(struct variable8));
 	      num_vars++; /* Multiplier should allways be valid */
-	      if (register_mib_range("Meter",
+	      snprintf(descr, 19, "Meter%d", i);
+	      if (register_mib_range(descr,
 				     (struct variable *) agent_meter_vars,
 				     sizeof(struct variable8),
 				     num_vars,
@@ -455,7 +500,8 @@ main (int argc, char **argv) {
 		       memmove(&agent_obis_vars[num_vars],
 			       &agent_obis_vars[num_vars+1],
 			       (5-num_vars)*sizeof(struct variable8));
-		    if (register_mib_range("Meter",
+#if 1
+		    if (register_mib_range(descr,
 					   (struct variable *)agent_obis_vars,
 					   sizeof(struct variable8),
 					   num_vars,
@@ -466,6 +512,16 @@ main (int argc, char **argv) {
 					   i+1,
 					   i+2,
 					   NULL) !=
+#endif
+#if 0
+		    if (register_mib(descr,
+				     (struct variable *)agent_obis_vars,
+				     sizeof(struct variable8),
+				     num_vars,
+				     MeterTableEntry_oid,
+				     sizeof(MeterTableEntry_oid) /
+				     sizeof(oid)) !=
+#endif
 			MIB_REGISTERED_OK)
 		    {
 		       DEBUGMSGTL(("register_mib", "%s registration failed\n",
