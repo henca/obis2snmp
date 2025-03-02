@@ -35,7 +35,7 @@ PLG_FILES = $(PLG_OBJ_FILES:$(PLGOBJDIR)/%.o=$(PLGDIR)/%.so)
 AGENTX = $(BINDIR)/obis2snmp_agentxd
 
 # some json-c versions deprecated useful functions which then was undeprecated
-CFLAGS += -g `pkg-config --cflags json-c` -Wno-deprecated-declarations \
+CFLAGS += -O2 `pkg-config --cflags json-c` -Wno-deprecated-declarations \
           `curl-config --cflags` \
           $(NETSNMP_CFLAGS) -fPIC -Wall -Wstrict-prototypes -I $(INCDIR) \
           -D ETC_DIR=\"$(ETC_DIR)\"
@@ -59,9 +59,6 @@ $(OBJDIR) $(BINDIR) $(PLGOBJDIR) $(PLGDIR):
 	mkdir -p $@
 
 
-P1IB.o: P1IB.c
-	gcc -c $(CFLAGS) $<
-
 $(AGENTX): $(OBJ_FILES) | $(BINDIR)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
@@ -72,7 +69,7 @@ $(PLGOBJDIR)/%.o: $(PLGSRCDIR)/%.c | $(PLGOBJDIR)
 	gcc -c $(CFLAGS) -o $@ $<
 
 clean:
-	rm -f $(OBJS) agentx-daemon.o $(AGENTX) $(PLUGINS)
+	rm -rf $(OBJS) agentx-daemon.o $(AGENTX) $(PLGOBJDIR)
 
 install: $(AGENTX) | $(INSTALLED_CONFIG_FILE)
 	install -d $(DESTDIR)$(NETSNMP_MIBS_DIR)
