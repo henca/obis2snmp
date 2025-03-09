@@ -286,10 +286,10 @@ void *init_driver(struct MeterTable_entry *entry,
        "Day minimum water temperature", 0, "C", 0,
        0, 0, 0, 0, 0, 0, 1, 0},
       {{8,0,11,1,0}, "leak-alarm burst-alarm",
-       "0=OK, 1=leak alarm, 2=burst alarm, 3=leak+burst", 0, "-", 0,
+       "0=OK, 1=leak alarm, 2=burst alarm, 3=leak+burst", 0, "status", 0,
        1, 0, 0, 0, 0, 0, 0, 0},
       {{8,0,11,2,0}, "dry-alarm reverse-alarm",
-       "0=OK, 1=dry alarm, 2=reverse alarm, 3=dry+reverse", 0, "-", 0,
+       "0=OK, 1=dry alarm, 2=reverse alarm, 3=dry+reverse", 0, "status", 0,
        1, 0, 0, 0, 0, 0, 0, 0},
    };
    struct instance *out = malloc(sizeof(struct instance));

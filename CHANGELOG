@@ -4,5 +4,6 @@ Date       Version  Comment
                     Added peak graphs in mrtg template.
                     Using max and mean instead of max/min in mrtg template
                       except for voltage where min makes more sense.
+                    Added support for WIMBIB wireless water meter interface.
 
 27/10 2024 1.0      First public release
