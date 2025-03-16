@@ -221,12 +221,17 @@ static size_t my_curl_callback(void *buffer, size_t size, size_t nmemb, void *us
 		  tmp_json = json_object_object_get(info_json, "meter_id");
 		  if(tmp_json)
 		  {
-		     strncpy(&(entry->MeterType[strlen(entry->MeterType)]),
-			     json_object_get_string(tmp_json),
-			     254-strlen(entry->MeterType));
-		     entry->MeterType[254]=0;
-		     entry->MeterType_len =
-			strlen(entry->MeterType);
+		     if(strlen(entry->MeterType) < 250)
+		     {
+			strcpy(&(entry->MeterType[strlen(entry->MeterType)]),
+			       " ");
+			strncpy(&(entry->MeterType[strlen(entry->MeterType)]),
+				json_object_get_string(tmp_json),
+				254-strlen(entry->MeterType));
+			entry->MeterType[254]=0;
+			entry->MeterType_len =
+			   strlen(entry->MeterType);
+		     }
 		  }
 	       }
 	       if(!entry->MeterMAC_len)
