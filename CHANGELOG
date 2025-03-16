@@ -1,5 +1,7 @@
 Date       Version  Comment
 ---------------------------------------------------------------------------
+??/?? ???? 1.2      Not released yet
+
 16/3  2025 1.1      Added peak graphs in mrtg template.
                     Using max and mean instead of max/min in mrtg template
                       except for voltage where min makes more sense.
