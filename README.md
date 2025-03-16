@@ -1,5 +1,5 @@
 # obis2snmp
-SNMP agentx proxy providing obis data from utility meters
+SNMP agentx proxy providing OBIS data from utility meters
 
 ## Building and installation
 Once downloaded and unpacked or checked out from git, in the directory
@@ -32,14 +32,15 @@ obis2snmp containing driver plugins for different meters.
 ## Prerequisites
 This agentx daemon of course depends upon **net-snmp**
 
-The **json-c** library is also needed to read the configuration file and for the
-P1IB driver.
+The **json-c** library is also needed to read the configuration file and for
+the drivers.
 
 To get data from meters **libcurl** is also needed.
 
 ## Drivers
-At the time of this writing, only one driver has been implemented, for the
-[P1IB HAN port device](https://remne.tech/p1ib/).
+At the time of this writing, only two drivers have been implemented, for the
+[P1IB HAN port device](https://remne.tech/p1ib/) and the
+[WiMBIB Wireless M-Bus Interface Bridge](https://remne.tech/wimbib/) .
 Contributions of more drivers are welcome!
 
 ## Configuration
@@ -48,7 +49,7 @@ drives to be used together with their parameters:
 
 `{"meters": [`  
 `   {"driver": "P1IB", "parameters": "ip=192.168.67.112"},`  
-`   {"driver": "P1IB", "parameters": "ip=192.168.67.112,multiplier=1"}`  
+`   {"driver": "WiMBIB", "parameters": "ip=192.168.67.115,showextra=true"},`  
 ` ]}`
 
 In the example above I really only have one utility meter to read, but
@@ -59,11 +60,17 @@ make it appear as two meters by giving slightly different parameters.
 |Parameter |Mandatory|Explanation                              |
 |----------|---------|-----------------------------------------|
 |ip        |yes      |The IP address of he P1IB unit to monitor|
-|multiplier|no       |(default 1000) The value to multiply the obis floating point values with to get enough precision in SNMP integer values. For P1IB it is really not recommended to change the default value.|
+|multiplier|no       |(default 1000) The value to multiply the OBIS floating point values with to get enough precision in SNMP integer values. For P1IB it is really not recommended to change the default value.|
+
+### WiMBIB
+|Parameter |Mandatory|Explanation                                |
+|----------|---------|-------------------------------------------|
+|ip        |yes      |The IP address of he WiMBIB unit to monitor|
+|showextra |no       |(default false) Whether to show extra data (temperatures and statuses) for which there are no standard OBIS values. The WiMBIB does not really provide its data as OBIS values, but some of its data (volumes) have standard OBIS codes used by other meters. With this value set to false, only those volumes with standard OBIS codes will be presented. With this value set to true, also temperatures and statuses will be presented using made up non standard OBIS codes translated to SNMP oids .|
 
 ## Configuration of net-snmp
 In the file `snmpd.conf` which usually is below /etc/snmp you should add the
-following line to present these obis values:
+following line to present these OBIS values:
 
 `view    systemview    included   .1.3.6.1.4.1.62368.1.1`
 
