@@ -45,6 +45,7 @@ struct instance
    long previous_volume;
    time_t previous_time;
    long average_flow;
+   int showextra;
    /* Add stuff for filtering averages here */
 };
 
@@ -319,25 +320,27 @@ void *init_driver(struct MeterTable_entry *entry,
       entry->MeterIP_len=0;
       entry->MeterIP[0]=0;
    }
-   pc = strstr(parameters, "multiplier=");
-#if 0
+   pc = strstr(parameters, "showextra=");
    if(pc)
    {
-      pc += 11;
-      entry->MeterMultiplier=atol(pc);
-      if(entry->MeterMultiplier < 1)
-	 entry->MeterMultiplier = 1;
+      pc += 10;
+      out->showextra=atoi(pc);
+      if(out->showextra)
+	 out->showextra = 1;
    }
    else
    {
-      entry->MeterMultiplier=1000;
+      out->showextra=0;
    }
-#endif
+
    entry->MeterMultiplier=1;
    /* initialize other parts of entry */
    entry->MeterMAC[0]=0;
    entry->MeterMAC_len=0;
-   entry->numObisEntries = sizeof(driver_obis)/sizeof(struct obis_data);
+   if(out->showextra)
+      entry->numObisEntries = sizeof(driver_obis)/sizeof(struct obis_data);
+   else
+      entry->numObisEntries = 3; /* only volumes and flow rate with standard OBIS codes */
    entry->ObisEntries = malloc(sizeof(driver_obis));
    if(!entry->ObisEntries)
       entry->numObisEntries = 0;
