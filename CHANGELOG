@@ -1,6 +1,7 @@
 Date       Version  Comment
 ---------------------------------------------------------------------------
-??/?? ???? 1.2      Not released yet
+??/?? ???? 1.2      Added support for TEMPerX232 USB thermometer
+                    Not released yet
 
 16/3  2025 1.1      Added peak graphs in mrtg template.
                     Using max and mean instead of max/min in mrtg template
