@@ -69,7 +69,7 @@ $(PLGOBJDIR)/%.o: $(PLGSRCDIR)/%.c | $(PLGOBJDIR)
 	gcc -c $(CFLAGS) -o $@ $<
 
 clean:
-	rm -rf $(OBJS) agentx-daemon.o $(AGENTX) $(PLGOBJDIR)
+	rm -rf $(OBJ_FILES) agentx-daemon.o $(AGENTX) $(PLGOBJDIR)
 
 install: $(AGENTX) | $(INSTALLED_CONFIG_FILE)
 	install -d $(DESTDIR)$(NETSNMP_MIBS_DIR)
