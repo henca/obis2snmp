@@ -255,8 +255,13 @@ agent_h_meter(struct variable *vp, oid *name, size_t *length, int exact,
 	    return (u_char *) entry->MeterMAC;
 	 }
       case COLUMN_METERRSSI:
-	 long_ret  = entry->MeterRSSI;
-	 return (u_char *)&long_ret;
+	 if(!entry->MeterRSSI)
+	    return NULL;
+	 else
+	 {
+	    long_ret  = entry->MeterRSSI;
+	    return (u_char *)&long_ret;
+	 }
       case COLUMN_METERMULTIPLIER:
 	 long_ret  = entry->MeterMultiplier;
 	 return (u_char *)&long_ret;
