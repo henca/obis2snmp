@@ -40,6 +40,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include "driver.h"
 
+#define MAX_TEMPER_VALUES 10
+
 struct data
 {
    char description[20];
@@ -52,6 +54,8 @@ struct instance
    struct MeterTable_entry *entry;
    int fdTtyUSB;
    /* Add stuff for filtering averages here */
+   char description[MAX_TEMPER_VALUES][20];
+   float average[MAX_TEMPER_VALUES];
 };
 
 /* returns file descriptor or < 0 at failure */
@@ -247,7 +251,7 @@ int main(int argc, char **argv) /* remove this main function later, now only
 				   for testing purposes */
 {
    char version[50];
-   struct data d[10];
+   struct data d[MAX_TEMPER_VALUES];
    int numdata;
    int i;
    int fd;
@@ -257,7 +261,7 @@ int main(int argc, char **argv) /* remove this main function later, now only
       return 2;
    get_version(fd, version, 50);
    printf("%s\n", version);
-   numdata=get_data(fd, d, 10);
+   numdata=get_data(fd, d, MAX_TEMPER_VALUES);
    for(i=0; i<numdata; i++)
       printf("%20s : %5.2f %s\n", d[i].description, d[i].value, d[i].unit);
 
@@ -270,8 +274,8 @@ void *init_driver(struct MeterTable_entry *entry,
 		  const char *parameters)
 {
    char *pc;
-   struct obis_data driver_obis[10];
-   struct data d[10];
+   struct obis_data driver_obis[MAX_TEMPER_VALUES];
+   struct data d[MAX_TEMPER_VALUES];
    int numdata=0;
    int i;
 
@@ -307,7 +311,7 @@ void *init_driver(struct MeterTable_entry *entry,
    }
    entry->MeterType_len =
       get_version(out->fdTtyUSB, entry->MeterType, 254);
-   numdata=get_data(out->fdTtyUSB, d, 10);
+   numdata=get_data(out->fdTtyUSB, d, MAX_TEMPER_VALUES);
    if(!numdata)
    {
       free(out);      
@@ -324,7 +328,11 @@ void *init_driver(struct MeterTable_entry *entry,
       snprintf(driver_obis[i].description, 255, "%s", d[i].description);
       snprintf(driver_obis[i].unit, 255, "%s", d[i].unit);
       driver_obis[i].latest_is_valid = 1;
+      strcpy(out->description[i], d[i].description);
+      out->average[i] = d[i].value;
    }
+   for(;i<MAX_TEMPER_VALUES;i++)
+      out->description[i][0]=0;
    pc = strstr(parameters, "multiplier=");
    if(pc)
    {
@@ -349,7 +357,8 @@ void *init_driver(struct MeterTable_entry *entry,
       snprintf(driver_obis[i].unit, 255, "%s", d[i].unit);
       driver_obis[i].latest_is_valid = 1;
       driver_obis[i].latest_value = entry->MeterMultiplier * d[i].value;
-      driver_obis[i].mean6m_is_valid = 0;
+      driver_obis[i].mean6m_is_valid = 1;
+      driver_obis[i].mean6m_value = entry->MeterMultiplier * out->average[i];
       driver_obis[i].max6m_is_valid = 0;
       driver_obis[i].min6m_is_valid = 0;
    }
@@ -372,24 +381,36 @@ void *init_driver(struct MeterTable_entry *entry,
 
 void update_driver_data(void *driver, struct MeterTable_entry *entry)
 {
-   struct data d[10];
+   struct data d[MAX_TEMPER_VALUES];
    int numdata=0;
    int m,n;
    struct instance *i = driver;
 
    if(!i)
       return;
-   numdata=get_data(i->fdTtyUSB, d, 10);
+   numdata=get_data(i->fdTtyUSB, d, MAX_TEMPER_VALUES);
    /* Both arrays should be sorted and contain the same descriptions, but
       if something would be missing somewhere we just skip that update */
    for(m=0, n=0; (m<numdata) && (n<i->entry->numObisEntries); m++, n++)
       if(!strcmp(d[m].description, i->entry->ObisEntries[n].obis_string))
+      {
 	 i->entry->ObisEntries[n].latest_value =
 	    i->entry->MeterMultiplier * d[m].value;
+	 i->average[n] = 0.95*i->average[n] + 0.05*d[m].value;
+	 i->entry->ObisEntries[n].mean6m_value =
+	    i->entry->MeterMultiplier * i->average[n];
+      }
       else if(0>strcmp(d[m].description, i->entry->ObisEntries[n].obis_string))
 	 n--;
       else
-	 m--;	 
+	 m--;
+   for(m=0, n=0; (m<numdata) && (n<i->entry->numObisEntries); m++, n++)
+      if(!strcmp(d[m].description, i->description[n]))
+	 i->average[n] = 0.9*i->average[n] + 0.1*d[m].value;
+      else if(0>strcmp(d[m].description, i->entry->ObisEntries[n].obis_string))
+	 n--;
+      else
+	 m--;
 } /* update_driver_data */
 
 void remove_driver(void *driver, struct MeterTable_entry *entry)
