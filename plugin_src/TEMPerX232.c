@@ -59,7 +59,7 @@ struct instance
 };
 
 /* returns file descriptor or < 0 at failure */
-static int init_serial(const char *port)
+static int init_serial(const char *port, unsigned int timeout_deciSec)
 {
    struct termios t;
    int fd = open(port, O_RDWR | O_NOCTTY);
@@ -84,7 +84,7 @@ static int init_serial(const char *port)
    t.c_cflag &= ~ECHO; 
    t.c_lflag &= ~ECHO;
    t.c_lflag &= ~ICANON;
-   t.c_cc[VTIME]=5;
+   t.c_cc[VTIME]=timeout_deciSec;
    t.c_cc[VMIN]=0;
    tcsetattr(fd, TCSANOW, &t);
 
@@ -257,7 +257,7 @@ int main(int argc, char **argv) /* remove this main function later, now only
    int fd;
    if(argc < 2)
       return  1;
-   if(!((fd = init_serial(argv[1])) > 0))
+   if(!((fd = init_serial(argv[1], 5)) > 0))
       return 2;
    get_version(fd, version, 50);
    printf("%s\n", version);
@@ -278,6 +278,7 @@ void *init_driver(struct MeterTable_entry *entry,
    struct data d[MAX_TEMPER_VALUES];
    int numdata=0;
    int i;
+   unsigned int timeout_deciSec=5;
 
    struct instance *out = malloc(sizeof(struct instance));
 
@@ -288,7 +289,6 @@ void *init_driver(struct MeterTable_entry *entry,
 	MeterTable_oid_len, OID_LENGTH(MeterTableEntry_oid)); */
    
    out->entry=entry;
-   
    entry->valid = 1;
    pc = strstr(parameters, "device=");
    if(pc)
@@ -296,6 +296,9 @@ void *init_driver(struct MeterTable_entry *entry,
       pc += 7;
       strncpy(entry->MeterIP, pc, 255);
       entry->MeterIP[254]=0;
+      pc = strstr(entry->MeterIP, ",timeout=");
+      if(pc)
+	 *pc=0;
       entry->MeterIP_len = strlen(entry->MeterIP);
    }
    else
@@ -303,7 +306,13 @@ void *init_driver(struct MeterTable_entry *entry,
       sprintf(entry->MeterIP, "/dev/ttyUSB0");
       entry->MeterIP_len = strlen(entry->MeterIP);
    }
-   out->fdTtyUSB = init_serial(entry->MeterIP);
+   pc = strstr(parameters, "timeout=");
+   if(pc)
+   {
+      pc += 8;
+      timeout_deciSec = atoi(pc);
+   }
+   out->fdTtyUSB = init_serial(entry->MeterIP, timeout_deciSec);
    if(out->fdTtyUSB < 0)
    {
       free(out);      
