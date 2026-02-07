@@ -38,6 +38,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <fcntl.h>
 #include <string.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include "driver.h"
 
 #define MAX_TEMPER_VALUES 10
@@ -56,6 +57,7 @@ struct instance
    /* Add stuff for filtering averages here */
    char description[MAX_TEMPER_VALUES][20];
    float average[MAX_TEMPER_VALUES];
+   pthread_mutex_t mutex;
 };
 
 /* returns file descriptor or < 0 at failure */
@@ -385,6 +387,10 @@ void *init_driver(struct MeterTable_entry *entry,
    else
       memcpy(entry->ObisEntries, driver_obis,
 	     numdata*sizeof(struct obis_data));
+   if(pthread_mutex_init(&(out->mutex), NULL))
+   {
+      fprintf(stderr, "Failed initializing USB serial mutex\n");
+   }
    return out;
 } /* init_driver */
 
@@ -397,7 +403,9 @@ void update_driver_data(void *driver, struct MeterTable_entry *entry)
 
    if(!i)
       return;
+   pthread_mutex_lock(&(i->mutex));
    numdata=get_data(i->fdTtyUSB, d, MAX_TEMPER_VALUES);
+   pthread_mutex_unlock(&(i->mutex));
    /* Both arrays should be sorted and contain the same descriptions, but
       if something would be missing somewhere we just skip that update */
    for(m=0, n=0; (m<numdata) && (n<i->entry->numObisEntries); m++, n++)
@@ -432,6 +440,7 @@ void remove_driver(void *driver, struct MeterTable_entry *entry)
       return;                 /* Nothing to remove */
    entry->valid=0;
    close(i->fdTtyUSB);
+   pthread_mutex_destroy(&(i->mutex));
    if(entry->numObisEntries)
    {
       free(entry->ObisEntries);
