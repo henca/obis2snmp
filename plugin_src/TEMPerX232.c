@@ -54,11 +54,24 @@ struct instance
 {
    struct MeterTable_entry *entry;
    int fdTtyUSB;
+   struct termios tattr;
+   pthread_mutex_t mutex;
    /* Add stuff for filtering averages here */
    char description[MAX_TEMPER_VALUES][20];
    float average[MAX_TEMPER_VALUES];
-   pthread_mutex_t mutex;
 };
+
+static void reinit_serial(const char *port, struct instance *i)
+{
+   pthread_mutex_lock(&(i->mutex));
+
+   close(i->fdTtyUSB);
+   i->fdTtyUSB = open(port, O_RDWR | O_NOCTTY);
+   flock(i->fdTtyUSB, LOCK_EX | LOCK_NB);
+   tcsetattr(i->fdTtyUSB, TCSANOW, &(i->tattr));
+
+   pthread_mutex_unlock(&(i->mutex));
+}
 
 /* returns file descriptor or < 0 at failure */
 static int init_serial(const char *port, unsigned int timeout_deciSec)
@@ -320,6 +333,11 @@ void *init_driver(struct MeterTable_entry *entry,
       free(out);      
       return NULL;
    }
+   if(tcgetattr(out->fdTtyUSB, &(out->tattr)))
+   {
+      free(out);
+      return NULL;
+   }
    entry->MeterType_len =
       get_version(out->fdTtyUSB, entry->MeterType, 254);
    numdata=get_data(out->fdTtyUSB, d, MAX_TEMPER_VALUES);
@@ -400,6 +418,7 @@ void update_driver_data(void *driver, struct MeterTable_entry *entry)
    int numdata=0;
    int m,n;
    struct instance *i = driver;
+   static int failures = 0;
 
    if(!i)
       return;
@@ -408,6 +427,18 @@ void update_driver_data(void *driver, struct MeterTable_entry *entry)
    pthread_mutex_unlock(&(i->mutex));
    /* Both arrays should be sorted and contain the same descriptions, but
       if something would be missing somewhere we just skip that update */
+   if(numdata)
+   {
+      failures = 0;
+   }
+   else
+   {
+      failures++;
+      if(!(failures%3))
+	 reinit_serial(entry->MeterIP, i);
+      /* For some reason TemperX232 sometimes stops giving data and need to get
+	 reopened to start working again */
+   }
    for(m=0, n=0; (m<numdata) && (n<i->entry->numObisEntries); m++, n++)
       if(!strcmp(d[m].description, i->entry->ObisEntries[n].obis_string))
       {
