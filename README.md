@@ -49,7 +49,8 @@ drives to be used together with their parameters:
 
 `{"meters": [`  
 `   {"driver": "P1IB", "parameters": "ip=192.168.67.112"},`  
-`   {"driver": "WiMBIB", "parameters": "ip=192.168.67.115,showextra=1"},`  
+`   {"driver": "WiMBIB", "parameters": "ip=192.168.67.115,showextra=1"},`
+`   {"driver": "TEMPerX232", "parameters": "device=/dev/ttyUSB0,timeout=7"},`
 ` ]}`
 
 In the example above I really only have one utility meter to read, but
@@ -67,6 +68,12 @@ make it appear as two meters by giving slightly different parameters.
 |----------|---------|-------------------------------------------|
 |ip        |yes      |The IP address of he WiMBIB unit to monitor|
 |showextra |no       |(default 0) Whether to show extra data (temperatures and statuses) for which there are no standard OBIS values. The WiMBIB does not really provide its data as OBIS values, but some of its data (volumes) have standard OBIS codes used by other meters. With this value set to 0, only those volumes with standard OBIS codes will be presented. With this value set to 1, also temperatures and statuses will be presented using made up non standard OBIS codes translated to SNMP oids .|
+
+### TEMPerX232
+|Parameter |Mandatory|Explanation                              |
+|----------|---------|-----------------------------------------|
+|device    |no       |(default /dev/ttyUSB0) The serial port wher TEMPerX2323 is connected|
+|timeout   |no       |(default 5) Timeout in deciseconds (0.1s) to wait for new character from serial device.|
 
 ## Configuration of net-snmp
 In the file `snmpd.conf` which usually is below /etc/snmp you should add the

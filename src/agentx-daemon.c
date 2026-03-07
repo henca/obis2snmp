@@ -3,7 +3,7 @@ This is the main file of the obis2snmp agentx proxy
 
 SPDX-License-Identifier: BSD-2-Clause
 
-Copyright (c) 2024, Henrik Carlqvist
+Copyright (c) 2024-2026, Henrik Carlqvist
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -42,7 +42,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "obis2snmp.h"
 #include <net-snmp/agent/util_funcs.h>
 
-#define VERSION_STRING "1.2beta"
+#define VERSION_STRING "1.2"
 
 struct driver_data {
    void *dlhandle;
