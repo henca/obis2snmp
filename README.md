@@ -72,7 +72,7 @@ make it appear as two meters by giving slightly different parameters.
 ### TEMPerX232
 |Parameter |Mandatory|Explanation                              |
 |----------|---------|-----------------------------------------|
-|device    |no       |(default /dev/ttyUSB0) The serial port wher TEMPerX2323 is connected|
+|device    |no       |(default /dev/ttyUSB0) The serial port where TEMPerX2323 is connected|
 |timeout   |no       |(default 5) Timeout in deciseconds (0.1s) to wait for new character from serial device.|
 
 ## Configuration of net-snmp
