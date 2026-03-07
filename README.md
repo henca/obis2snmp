@@ -49,7 +49,7 @@ drives to be used together with their parameters:
 
 `{"meters": [`  
 `   {"driver": "P1IB", "parameters": "ip=192.168.67.112"},`  
-`   {"driver": "WiMBIB", "parameters": "ip=192.168.67.115,showextra=1"},`
+`   {"driver": "WiMBIB", "parameters": "ip=192.168.67.115,showextra=1"},`  
 `   {"driver": "TEMPerX232", "parameters": "device=/dev/ttyUSB0,timeout=7"},`
 ` ]}`
 
